@@ -1,0 +1,38 @@
+# Compiled binaries
+cloudflare_renew
+cloudflare_renew-mips
+tools/getip
+tools/setip
+tools/publicip
+
+# Test binaries
+tests/test_*
+!tests/test_*.c
+
+# Object files
+*.o
+*.a
+
+# Log files
+*.log
+cloudflare.log
+
+# Runtime files
+last.ip
+
+# Configuration files with sensitive data
+cloudflare.token
+
+# Backup files
+*.bak
+*~
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
