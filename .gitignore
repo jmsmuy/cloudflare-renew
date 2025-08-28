@@ -22,6 +22,7 @@ last.ip
 
 # Configuration files with sensitive data
 cloudflare.token
+cloudflare.conf
 
 # Backup files
 *.bak

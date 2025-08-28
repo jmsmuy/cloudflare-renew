@@ -1,0 +1,29 @@
+# Cloudflare Configuration File Sample
+# Copy this file to cloudflare.conf and fill in your actual values
+# Multiple domains/records can be specified
+
+# Entry 0: Primary domain
+ZONE_ID[0]=your_zone_id_here
+DNS_RECORD_ID[0]=your_dns_record_id_here
+DOMAIN_NAME[0]=example.com
+
+# Entry 1: Example subdomain (commented out)
+# ZONE_ID[1]=your_zone_id_here
+# DNS_RECORD_ID[1]=your_wildcard_record_id_here
+# DOMAIN_NAME[1]=*.example.com
+
+# Entry 2: Example different domain (commented out)
+# ZONE_ID[2]=your_zone_id_here
+# DNS_RECORD_ID[2]=your_www_record_id_here
+# DOMAIN_NAME[2]=www.example.com
+
+# To find your Zone ID:
+# 1. Log into Cloudflare dashboard
+# 2. Select your domain
+# 3. Look for "Zone ID" in the right sidebar
+
+# To find your DNS Record ID:
+# 1. Use the Cloudflare API: GET /zones/{zone_id}/dns_records
+# 2. Or use: curl -X GET "https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records" \
+#    -H "Authorization: Bearer your_api_token" \
+#    -H "Content-Type: application/json"
