@@ -56,6 +56,7 @@ static void cleanup_openssl(void)
 }
 
 // Public cleanup function for external use
+// cppcheck-suppress unusedFunction
 void http_cleanup(void)
 {
     cleanup_openssl();
@@ -117,7 +118,8 @@ void http_headers_free(struct http_header *headers)
 }
 
 // Helper function to parse URL into components
-int parse_url(const char *url, char *host, size_t host_size, int *port, char *path, size_t path_size, bool *is_https)
+// cppcheck-suppress staticFunction
+static int parse_url(const char *url, char *host, size_t host_size, int *port, char *path, size_t path_size, bool *is_https)
 {
     if (!url || !host || !port || !path || !is_https) {
         return -1;
@@ -184,11 +186,12 @@ int parse_url(const char *url, char *host, size_t host_size, int *port, char *pa
 }
 
 // Helper function to build HTTP request string
-char *build_http_request(const char *host,
-                         const char *path,
-                         http_method_t method,
-                         const char *body,
-                         struct http_header *headers)
+// cppcheck-suppress staticFunction
+static char *build_http_request(const char *host,
+                                const char *path,
+                                http_method_t method,
+                                const char *body,
+                                struct http_header *headers)
 {
     // Calculate total size needed
     size_t total_size = 1024; // Base size for request line and basic headers
@@ -306,7 +309,7 @@ int http_request(const char *url,
     }
 
     // Get server address
-    struct hostent *server = gethostbyname(host);
+    const struct hostent *server = gethostbyname(host);
     if (!server) {
         close(sockfd);
         return -1;
@@ -438,7 +441,7 @@ int http_request(const char *url,
     // Parse HTTP status code (use a copy to avoid modifying original)
     char *response_copy = strdup(response_data);
     if (response_copy) {
-        char *status_line = strtok(response_copy, "\r\n");
+        const char *status_line = strtok(response_copy, "\r\n");
         if (status_line) {
             // Find status code in "HTTP/1.1 200 OK" format
             char *status_start = strchr(status_line, ' ');

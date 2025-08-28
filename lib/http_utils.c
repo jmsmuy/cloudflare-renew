@@ -22,6 +22,7 @@ void http_response_free(struct http_response *response)
 }
 
 // libcurl write callback for HTTP responses
+// cppcheck-suppress unusedFunction
 size_t http_write_callback(const void *data, size_t size, size_t nmemb, void *userp)
 {
     size_t realsize = size * nmemb;

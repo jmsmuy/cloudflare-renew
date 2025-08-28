@@ -41,15 +41,7 @@ int http_request(const char *url,
                  struct http_header *headers,
                  struct http_response *response);
 
-// Helper function to parse URL into components
-int parse_url(const char *url, char *host, size_t host_size, int *port, char *path, size_t path_size, bool *is_https);
-
-// Helper function to build HTTP request string
-char *build_http_request(const char *host,
-                         const char *path,
-                         http_method_t method,
-                         const char *body,
-                         struct http_header *headers);
+// Helper functions are now internal (static) and not exposed in the public API
 
 // Cleanup function for OpenSSL resources
 void http_cleanup(void);
