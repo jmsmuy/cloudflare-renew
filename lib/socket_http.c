@@ -5,16 +5,16 @@
 #include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
 #include <openssl/bio.h>
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
-#include <unistd.h>
 #include <time.h>
+#include <unistd.h>
 
 // Global SSL context
 static SSL_CTX *ssl_ctx = NULL;
@@ -117,8 +117,7 @@ void http_headers_free(struct http_header *headers)
 }
 
 // Helper function to parse URL into components
-int parse_url(const char *url, char *host, size_t host_size, int *port, 
-              char *path, size_t path_size, bool *is_https)
+int parse_url(const char *url, char *host, size_t host_size, int *port, char *path, size_t path_size, bool *is_https)
 {
     if (!url || !host || !port || !path || !is_https) {
         return -1;
@@ -185,8 +184,11 @@ int parse_url(const char *url, char *host, size_t host_size, int *port,
 }
 
 // Helper function to build HTTP request string
-char *build_http_request(const char *host, const char *path, http_method_t method,
-                        const char *body, struct http_header *headers)
+char *build_http_request(const char *host,
+                         const char *path,
+                         http_method_t method,
+                         const char *body,
+                         struct http_header *headers)
 {
     // Calculate total size needed
     size_t total_size = 1024; // Base size for request line and basic headers
@@ -209,10 +211,18 @@ char *build_http_request(const char *host, const char *path, http_method_t metho
     // Build request line
     const char *method_str = "GET";
     switch (method) {
-        case HTTP_GET: method_str = "GET"; break;
-        case HTTP_POST: method_str = "POST"; break;
-        case HTTP_PUT: method_str = "PUT"; break;
-        case HTTP_DELETE: method_str = "DELETE"; break;
+        case HTTP_GET:
+            method_str = "GET";
+            break;
+        case HTTP_POST:
+            method_str = "POST";
+            break;
+        case HTTP_PUT:
+            method_str = "PUT";
+            break;
+        case HTTP_DELETE:
+            method_str = "DELETE";
+            break;
     }
 
     int pos = snprintf(request, total_size, "%s %s HTTP/1.1\r\n", method_str, path);
@@ -222,7 +232,7 @@ char *build_http_request(const char *host, const char *path, http_method_t metho
 
     // Add custom headers
     h = headers;
-    while (h && pos < (int)(total_size - 10)) {
+    while (h && pos < (int) (total_size - 10)) {
         pos += snprintf(request + pos, total_size - pos, "%s: %s\r\n", h->name, h->value);
         h = h->next;
     }
@@ -245,8 +255,11 @@ char *build_http_request(const char *host, const char *path, http_method_t metho
 }
 
 // Perform HTTP request using POSIX sockets
-int http_request(const char *url, http_method_t method, const char *body, 
-                struct http_header *headers, struct http_response *response)
+int http_request(const char *url,
+                 http_method_t method,
+                 const char *body,
+                 struct http_header *headers,
+                 struct http_response *response)
 {
     if (!url || !response) {
         return -1;
@@ -270,7 +283,7 @@ int http_request(const char *url, http_method_t method, const char *body,
     if (is_https && init_openssl() != 0) {
         return -1;
     }
-    
+
     // SSL initialized
 
     // Create socket
@@ -337,7 +350,8 @@ int http_request(const char *url, http_method_t method, const char *body,
     // Build HTTP request
     char *http_request = build_http_request(host, path, method, body, headers);
     if (!http_request) {
-        if (ssl) SSL_free(ssl);
+        if (ssl)
+            SSL_free(ssl);
         close(sockfd);
         return -1;
     }
@@ -353,7 +367,8 @@ int http_request(const char *url, http_method_t method, const char *body,
     free(http_request);
 
     if (sent != (ssize_t) request_len) {
-        if (ssl) SSL_free(ssl);
+        if (ssl)
+            SSL_free(ssl);
         close(sockfd);
         return -1;
     }
@@ -370,7 +385,7 @@ int http_request(const char *url, http_method_t method, const char *body,
         } else {
             received = recv(sockfd, buffer, sizeof(buffer) - 1, 0);
         }
-        
+
         if (received <= 0) {
             // Check if this is a clean connection close or an error
             if (ssl) {
@@ -388,7 +403,8 @@ int http_request(const char *url, http_method_t method, const char *body,
         char *new_data = realloc(response_data, total_received + received + 1);
         if (!new_data) {
             free(response_data);
-            if (ssl) SSL_free(ssl);
+            if (ssl)
+                SSL_free(ssl);
             close(sockfd);
             return -1;
         }
@@ -397,19 +413,20 @@ int http_request(const char *url, http_method_t method, const char *body,
         // Copy new data directly (don't null-terminate buffer)
         memcpy(response_data + total_received, buffer, received);
         total_received += received;
-        
+
         // For now, just receive all available data without early termination
         // TODO: Implement proper response completion detection
     }
-    
+
     // Null-terminate the response
     if (response_data) {
         response_data[total_received] = '\0';
     }
-    
+
     // Response received
 
-    if (ssl) SSL_free(ssl);
+    if (ssl)
+        SSL_free(ssl);
     close(sockfd);
 
     if (!response_data) {
@@ -447,31 +464,33 @@ int http_request(const char *url, http_method_t method, const char *body,
     } else {
         body_start += 4; // Skip \r\n\r\n
     }
-    
+
     if (body_start) {
         // Check if response uses chunked encoding
         bool is_chunked = (strstr(response_data, "Transfer-Encoding: chunked") != NULL);
-        
+
         if (is_chunked) {
             // Handle chunked encoding
             char *unchunked_data = NULL;
             size_t unchunked_size = 0;
             char *chunk_ptr = body_start;
-            
+
             while (*chunk_ptr) {
                 // Read chunk size (hex)
                 char *chunk_size_end = strstr(chunk_ptr, "\r\n");
-                if (!chunk_size_end) break;
-                
+                if (!chunk_size_end)
+                    break;
+
                 *chunk_size_end = '\0';
                 long chunk_size = strtol(chunk_ptr, NULL, 16);
                 *chunk_size_end = '\r';
-                
-                if (chunk_size == 0) break; // End of chunks
-                
+
+                if (chunk_size == 0)
+                    break; // End of chunks
+
                 // Move to chunk data
                 char *chunk_data = chunk_size_end + 2;
-                
+
                 // Reallocate buffer for unchunked data
                 char *new_data = realloc(unchunked_data, unchunked_size + chunk_size + 1);
                 if (!new_data) {
@@ -480,15 +499,15 @@ int http_request(const char *url, http_method_t method, const char *body,
                     return -1;
                 }
                 unchunked_data = new_data;
-                
+
                 // Copy chunk data
                 memcpy(unchunked_data + unchunked_size, chunk_data, chunk_size);
                 unchunked_size += chunk_size;
-                
+
                 // Move to next chunk
                 chunk_ptr = chunk_data + chunk_size + 2; // Skip chunk data + \r\n
             }
-            
+
             if (unchunked_data) {
                 unchunked_data[unchunked_size] = '\0';
                 response->data = unchunked_data;
@@ -499,7 +518,7 @@ int http_request(const char *url, http_method_t method, const char *body,
         } else {
             // Normal response (not chunked)
             size_t body_size = strlen(body_start);
-            
+
             // Allocate new buffer for just the body
             response->data = malloc(body_size + 1);
             if (response->data) {

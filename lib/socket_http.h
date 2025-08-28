@@ -1,16 +1,11 @@
 #ifndef SOCKET_HTTP_H
 #define SOCKET_HTTP_H
 
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
 
 // HTTP method types
-typedef enum {
-    HTTP_GET,
-    HTTP_POST,
-    HTTP_PUT,
-    HTTP_DELETE
-} http_method_t;
+typedef enum { HTTP_GET, HTTP_POST, HTTP_PUT, HTTP_DELETE } http_method_t;
 
 // HTTP response structure
 struct http_response {
@@ -40,16 +35,21 @@ struct http_header *http_header_add(struct http_header *headers, const char *nam
 void http_headers_free(struct http_header *headers);
 
 // Perform HTTP request using POSIX sockets
-int http_request(const char *url, http_method_t method, const char *body, 
-                struct http_header *headers, struct http_response *response);
+int http_request(const char *url,
+                 http_method_t method,
+                 const char *body,
+                 struct http_header *headers,
+                 struct http_response *response);
 
 // Helper function to parse URL into components
-int parse_url(const char *url, char *host, size_t host_size, int *port, 
-              char *path, size_t path_size, bool *is_https);
+int parse_url(const char *url, char *host, size_t host_size, int *port, char *path, size_t path_size, bool *is_https);
 
 // Helper function to build HTTP request string
-char *build_http_request(const char *host, const char *path, http_method_t method,
-                        const char *body, struct http_header *headers);
+char *build_http_request(const char *host,
+                         const char *path,
+                         http_method_t method,
+                         const char *body,
+                         struct http_header *headers);
 
 // Cleanup function for OpenSSL resources
 void http_cleanup(void);
