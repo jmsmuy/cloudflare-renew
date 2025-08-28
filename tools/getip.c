@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
         free(ip_address);
         return 0;
     }
-    
+
     fprintf(stderr, "Failed to get IP from Cloudflare\n");
     return 1;
 }

@@ -13,7 +13,7 @@ int main(void)
         free(ip_address);
         return 0;
     }
-    
+
     fprintf(stderr, "Error: Failed to get public IP\n");
     return 1;
 }
