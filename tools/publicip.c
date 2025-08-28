@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// Test comment to trigger CI workflow
+
 int main(void)
 {
     char *ip = get_public_ip();
