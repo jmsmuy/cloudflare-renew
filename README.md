@@ -38,12 +38,16 @@ A C-based dynamic DNS client for Cloudflare that automatically updates DNS recor
 
 ### cloudflare.conf
 Contains non-sensitive configuration for multiple domains:
-```json
-{
-  "ZONE_ID": ["zone1_id", "zone2_id"],
-  "DNS_RECORD_ID": ["record1_id", "record2_id"],
-  "DOMAIN_NAME": ["example.com", "subdomain.example.com"]
-}
+```bash
+# Entry 0: Primary domain
+ZONE_ID[0]=your_zone_id_here
+DNS_RECORD_ID[0]=your_dns_record_id_here
+DOMAIN_NAME[0]=example.com
+
+# Entry 1: Secondary domain
+ZONE_ID[1]=your_zone_id_here
+DNS_RECORD_ID[1]=your_dns_record_id_here
+DOMAIN_NAME[1]=subdomain.example.com
 ```
 
 ### cloudflare.token
