@@ -11,7 +11,7 @@
 // Helper function to trim whitespace
 static char *trim_whitespace(char *str)
 {
-    char *end;
+    char *end = NULL;
 
     // Trim leading space
     while (*str == ' ' || *str == '\t' || *str == '\n' || *str == '\r')
@@ -34,7 +34,7 @@ static char *trim_whitespace(char *str)
 // Get public IP from ipinfo.io
 char *get_public_ip(void)
 {
-    CURL *curl;
+    CURL *curl = NULL;
     CURLcode res;
     struct http_response response;
     char *result = NULL;

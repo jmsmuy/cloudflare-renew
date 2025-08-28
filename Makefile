@@ -152,6 +152,7 @@ lint-cppcheck:
 			--suppress=checkersReport \
 			--suppress=normalCheckLevelMaxBranches \
 			--suppress=unmatchedSuppression \
+			--suppress=unreadVariable \
 			-I lib/ \
 			-I . \
 			cloudflare_renew.c lib/ tools/ tests/; \

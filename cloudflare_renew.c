@@ -26,6 +26,7 @@ static void write_log(const char *message)
 
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
+    // Note: ctime is used here for simplicity in single-threaded context
     // Remove newline from ctime
     timestamp[strlen(timestamp) - 1] = '\0';
 
@@ -104,9 +105,9 @@ static char **get_all_domains(int *count)
                 }
 
                 if (strlen(domain) > 0) {
-                    char **new_domains = realloc(domains, (*count + 1) * sizeof(char *));
+                    char **new_domains = (char **) realloc((void *) domains, (*count + 1) * sizeof(char *));
                     if (!new_domains) {
-                        free(domains);
+                        free((void *) domains);
                         fclose(file);
                         return NULL;
                     }
@@ -230,7 +231,7 @@ int main(void)
         for (int i = 0; i < domain_count; i++) {
             free(domains[i]);
         }
-        free(domains);
+        free((void *) domains);
 
         // Step 5: Update last.ip file
         if (write_ip_to_file(LAST_IP_FILE, public_ip) == 0) {

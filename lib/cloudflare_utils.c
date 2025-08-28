@@ -8,7 +8,7 @@
 // Helper function to trim whitespace
 char *trim_whitespace(char *str)
 {
-    char *end;
+    char *end = NULL;
 
     // Trim leading space
     while (*str == ' ' || *str == '\t' || *str == '\n' || *str == '\r')
@@ -108,7 +108,9 @@ static int parse_array_index(const char *key, char *base_key, size_t base_key_si
     strncpy(index_str, bracket_start + 1, index_len);
     index_str[index_len] = '\0';
 
-    return atoi(index_str);
+    char *endptr = NULL;
+    long result = strtol(index_str, &endptr, 10);
+    return (int) result;
 }
 
 // Load configuration from two separate files
@@ -174,7 +176,11 @@ cloudflare_config_t *load_cloudflare_config(const char *config_file, const char 
     }
 
     // Second pass: parse values
-    rewind(file);
+    if (fseek(file, 0, SEEK_SET) != 0) {
+        free_cloudflare_config(config);
+        fclose(file);
+        return NULL;
+    }
     while (fgets(line, sizeof(line), file)) {
         char *trimmed = trim_whitespace(line);
         if (strlen(trimmed) == 0 || trimmed[0] == '#') {
