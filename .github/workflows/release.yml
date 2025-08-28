@@ -1,0 +1,251 @@
+name: Release - Build & Deploy Binaries
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '**.c'
+      - '**.h'
+      - 'Makefile'
+      - 'VERSION'
+      - '.github/workflows/release.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.0.0)'
+        required: false
+        default: ''
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      tag_name: ${{ steps.version.outputs.tag_name }}
+      release_created: ${{ steps.version.outputs.release_created }}
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        
+    - name: Determine version
+      id: version
+      run: |
+        if [ -n "${{ github.event.inputs.version }}" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+        elif [ -f VERSION ]; then
+          VERSION="v$(cat VERSION)"
+        else
+          # Generate version from date and commit
+          DATE=$(date +%Y.%m.%d)
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          VERSION="v${DATE}-${SHORT_SHA}"
+        fi
+        
+        echo "tag_name=${VERSION}" >> $GITHUB_OUTPUT
+        echo "📦 Release version: ${VERSION}"
+        
+        # Check if tag already exists
+        if git rev-parse "$VERSION" >/dev/null 2>&1; then
+          echo "⚠️  Tag $VERSION already exists, skipping release creation"
+          echo "release_created=false" >> $GITHUB_OUTPUT
+        else
+          echo "release_created=true" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Create Release
+      id: create_release
+      if: steps.version.outputs.release_created == 'true'
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ steps.version.outputs.tag_name }}
+        release_name: Cloudflare DNS Renew ${{ steps.version.outputs.tag_name }}
+        body: |
+          ## Cloudflare DNS Renew ${{ steps.version.outputs.tag_name }}
+          
+          Automated release of Cloudflare DNS management tools.
+          
+          ### Features
+          - 🔄 Automatic DNS record updates when IP changes
+          - 🌐 Multi-domain support from single configuration
+          - 📝 Comprehensive logging to `cloudflare.log`
+          - 🛡️ Secure API token handling
+          - 🎯 Individual tools for manual operations
+          
+          ### Downloads
+          - **Linux x86_64**: `cloudflare-renew-linux-x64.tar.gz`
+          - **Source Code**: Use the source code links below
+          
+          ### Quick Start
+          1. Download and extract the appropriate binary
+          2. Copy `cloudflare.conf.sample` to `cloudflare.conf` and configure
+          3. Add your Cloudflare API token to `cloudflare.token`
+          4. Run `./cloudflare_renew` for automatic DNS management
+          
+          See the [README](https://github.com/jmsmuy/cloudflare-renew/blob/main/README.md) for detailed setup instructions.
+        draft: false
+        prerelease: false
+
+  build-linux:
+    name: Build Linux Binaries
+    runs-on: ubuntu-latest
+    needs: create-release
+    if: needs.create-release.outputs.release_created == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          libcurl4-openssl-dev \
+          libssl-dev \
+          zlib1g-dev \
+          pkg-config
+          
+    - name: Build static binaries
+      run: |
+        echo "🔨 Building static binaries for Linux x86_64..."
+        
+        # Build with static linking for maximum compatibility
+        export LDFLAGS="-static-libgcc -static"
+        export CFLAGS="-O2 -march=x86-64 -mtune=generic"
+        
+        make clean
+        make all
+        
+        # Verify binaries
+        echo "📋 Built binaries:"
+        ls -la tools/ cloudflare_renew
+        file tools/getip tools/setip tools/publicip cloudflare_renew
+        
+        # Test basic functionality
+        echo "🧪 Testing binaries..."
+        ./tools/getip 2>&1 | head -3 || true
+        ./tools/setip 2>&1 | head -3 || true
+        ./tools/publicip --help 2>&1 | head -3 || ./tools/publicip 2>&1 | head -3 || true
+        
+    - name: Create binary package
+      run: |
+        echo "📦 Creating release package..."
+        
+        # Create release directory
+        mkdir -p release/cloudflare-renew
+        
+        # Copy binaries
+        cp tools/getip tools/setip tools/publicip cloudflare_renew release/cloudflare-renew/
+        
+        # Copy configuration templates and documentation
+        cp cloudflare.conf.sample release/cloudflare-renew/
+        cp README.md LICENSE release/cloudflare-renew/
+        cp getip-all.sh setip-all.sh release/cloudflare-renew/
+        
+        # Create quick start script
+        cat > release/cloudflare-renew/install.sh << 'EOF'
+        #!/bin/bash
+        echo "🚀 Cloudflare DNS Renew Quick Setup"
+        echo "=================================="
+        
+        # Make binaries executable
+        chmod +x cloudflare_renew getip setip publicip getip-all.sh setip-all.sh
+        
+        # Check if config exists
+        if [ ! -f cloudflare.conf ]; then
+          echo "📋 Creating cloudflare.conf from template..."
+          cp cloudflare.conf.sample cloudflare.conf
+          echo "⚠️  Please edit cloudflare.conf with your Zone ID, DNS Record ID, and Domain Name"
+        fi
+        
+        # Check if token exists
+        if [ ! -f cloudflare.token ]; then
+          echo "🔑 Please create cloudflare.token with your Cloudflare API token"
+          echo "   Get your token from: https://dash.cloudflare.com/profile/api-tokens"
+        fi
+        
+        echo ""
+        echo "✅ Setup complete! Available commands:"
+        echo "   ./cloudflare_renew          - Automatic DNS management"
+        echo "   ./getip <config> <token>    - Get current DNS IP"
+        echo "   ./setip <config> <token> <ip> - Set DNS IP"
+        echo "   ./publicip                  - Get public IP"
+        echo ""
+        echo "📖 See README.md for detailed documentation"
+        EOF
+        
+        chmod +x release/cloudflare-renew/install.sh
+        
+        # Create tarball
+        cd release
+        tar -czf cloudflare-renew-linux-x64.tar.gz cloudflare-renew/
+        cd ..
+        
+        # Verify package
+        echo "📋 Package contents:"
+        tar -tzf release/cloudflare-renew-linux-x64.tar.gz
+        
+        echo "📊 Package size:"
+        ls -lh release/cloudflare-renew-linux-x64.tar.gz
+        
+    - name: Upload Release Asset
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ needs.create-release.outputs.upload_url }}
+        asset_path: ./release/cloudflare-renew-linux-x64.tar.gz
+        asset_name: cloudflare-renew-linux-x64.tar.gz
+        asset_content_type: application/gzip
+        
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: cloudflare-renew-linux-binaries
+        path: |
+          release/cloudflare-renew-linux-x64.tar.gz
+          tools/
+          cloudflare_renew
+        retention-days: 30
+
+  update-docs:
+    name: Update Documentation
+    runs-on: ubuntu-latest
+    needs: [create-release, build-linux]
+    if: needs.create-release.outputs.release_created == 'true'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Update README with latest release
+      run: |
+        VERSION="${{ needs.create-release.outputs.tag_name }}"
+        
+        # Update README.md with latest release info
+        sed -i "s|download/v[0-9][^/]*/|download/$VERSION/|g" README.md || true
+        sed -i "s|Version: v[0-9][^)]*|Version: $VERSION|g" README.md || true
+        
+        echo "📝 Updated README.md with release $VERSION"
+        
+    - name: Commit documentation updates
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        if git diff --quiet; then
+          echo "📝 No documentation changes to commit"
+        else
+          git add README.md
+          git commit -m "docs: Update README with release ${{ needs.create-release.outputs.tag_name }} [skip ci]"
+          git push
+          echo "📝 Documentation updated and pushed"
+        fi

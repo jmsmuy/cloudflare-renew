@@ -1,0 +1,93 @@
+name: CI - Code Quality & Tests
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - '**.c'
+      - '**.h'
+      - 'Makefile'
+      - '.clang-format'
+      - '.clang-tidy'
+      - '.github/workflows/ci.yml'
+
+jobs:
+  code-quality:
+    name: Code Quality & Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          libcurl4-openssl-dev \
+          libssl-dev \
+          zlib1g-dev \
+          clang-format \
+          clang-tidy \
+          cppcheck \
+          pkg-config
+        
+    - name: Check code formatting
+      run: |
+        echo "🔍 Checking code formatting..."
+        make check-format
+        
+    - name: Run static analysis
+      run: |
+        echo "🔍 Running static analysis..."
+        make lint
+        
+    - name: Build all programs
+      run: |
+        echo "🔨 Building all programs..."
+        make clean
+        make all
+        
+    - name: Build and run tests
+      run: |
+        echo "🧪 Building and running tests..."
+        make tests
+        make test
+        
+    - name: Verify executables
+      run: |
+        echo "✅ Verifying executables exist..."
+        ls -la tools/
+        ls -la cloudflare_renew
+        file tools/getip tools/setip tools/publicip cloudflare_renew
+        
+    - name: Test help commands
+      run: |
+        echo "📋 Testing help commands..."
+        echo "# getip help"
+        ./tools/getip || true
+        echo ""
+        echo "# setip help"  
+        ./tools/setip || true
+        echo ""
+        echo "# publicip help"
+        ./tools/publicip --help || ./tools/publicip -h || echo "No help flag available"
+        echo ""
+        echo "# cloudflare_renew help"
+        echo "cloudflare_renew requires config files, skipping help test"
+        
+    - name: Check for configuration template
+      run: |
+        echo "📋 Verifying configuration template exists..."
+        test -f cloudflare.conf.sample
+        echo "✅ Configuration template found"
+        
+    - name: Summary
+      run: |
+        echo "✅ All checks passed!"
+        echo "- Code formatting: ✅"
+        echo "- Static analysis: ✅" 
+        echo "- Build: ✅"
+        echo "- Tests: ✅"
+        echo "- Executables: ✅"

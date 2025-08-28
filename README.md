@@ -166,6 +166,35 @@ make check-format   # Verify code formatting
 make lint           # Run all static analysis tools
 ```
 
+## Continuous Integration
+
+The project uses GitHub Actions for automated quality assurance and releases:
+
+### 🔍 **CI Pipeline** (Pull Requests)
+- **Triggers**: On pull requests to `main` branch
+- **Checks**: 
+  - Code formatting verification
+  - Static analysis (cppcheck, clang-tidy)
+  - Build verification for all programs
+  - Test suite execution
+  - Binary functionality testing
+
+### 🚀 **Release Pipeline** (Main Branch)
+- **Triggers**: On pushes to `main` branch or manual dispatch
+- **Actions**:
+  - Automatic version detection (from `VERSION` file or date-based)
+  - Release creation with detailed changelog
+  - Linux x86_64 binary compilation with static linking
+  - Packaged distribution with setup scripts and documentation
+  - Automatic documentation updates
+
+### 📦 **Binary Releases**
+Each release includes:
+- Pre-compiled static binaries for Linux x86_64
+- Configuration templates (`cloudflare.conf.sample`)
+- Setup script (`install.sh`) for quick deployment
+- Complete documentation and license files
+
 ## Security
 
 - API token stored separately from configuration
