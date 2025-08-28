@@ -119,7 +119,8 @@ void http_headers_free(struct http_header *headers)
 
 // Helper function to parse URL into components
 // cppcheck-suppress staticFunction
-static int parse_url(const char *url, char *host, size_t host_size, int *port, char *path, size_t path_size, bool *is_https)
+static int
+parse_url(const char *url, char *host, size_t host_size, int *port, char *path, size_t path_size, bool *is_https)
 {
     if (!url || !host || !port || !path || !is_https) {
         return -1;
