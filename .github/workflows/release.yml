@@ -16,6 +16,10 @@ on:
         required: false
         default: ''
 
+permissions:
+  contents: write
+  discussions: write
+
 jobs:
   create-release:
     name: Create Release
@@ -23,7 +27,6 @@ jobs:
     outputs:
       tag_name: ${{ steps.version.outputs.tag_name }}
       release_created: ${{ steps.version.outputs.release_created }}
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
     
     steps:
     - name: Checkout code
@@ -59,37 +62,42 @@ jobs:
     - name: Create Release
       id: create_release
       if: steps.version.outputs.release_created == 'true'
-      uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.version.outputs.tag_name }}
-        release_name: Cloudflare DNS Renew ${{ steps.version.outputs.tag_name }}
-        body: |
-          ## Cloudflare DNS Renew ${{ steps.version.outputs.tag_name }}
-          
-          Automated release of Cloudflare DNS management tools.
-          
-          ### Features
-          - 🔄 Automatic DNS record updates when IP changes
-          - 🌐 Multi-domain support from single configuration
-          - 📝 Comprehensive logging to `cloudflare.log`
-          - 🛡️ Secure API token handling
-          - 🎯 Individual tools for manual operations
-          
-          ### Downloads
-          - **Linux x86_64**: `cloudflare-renew-linux-x64.tar.gz`
-          - **Source Code**: Use the source code links below
-          
-          ### Quick Start
-          1. Download and extract the appropriate binary
-          2. Copy `cloudflare.conf.sample` to `cloudflare.conf` and configure
-          3. Add your Cloudflare API token to `cloudflare.token`
-          4. Run `./cloudflare_renew` for automatic DNS management
-          
-          See the [README](https://github.com/jmsmuy/cloudflare-renew/blob/main/README.md) for detailed setup instructions.
-        draft: false
-        prerelease: false
+      run: |
+        VERSION="${{ steps.version.outputs.tag_name }}"
+        
+        # Create release notes
+        cat > release_notes.md << 'EOF'
+        ## Cloudflare DNS Renew ${{ steps.version.outputs.tag_name }}
+        
+        Automated release of Cloudflare DNS management tools.
+        
+        ### Features
+        - 🔄 Automatic DNS record updates when IP changes
+        - 🌐 Multi-domain support from single configuration
+        - 📝 Comprehensive logging to `cloudflare.log`
+        - 🛡️ Secure API token handling
+        - 🎯 Individual tools for manual operations
+        
+        ### Downloads
+        - **Linux x86_64**: `cloudflare-renew-linux-x64.tar.gz`
+        - **Source Code**: Use the source code links below
+        
+        ### Quick Start
+        1. Download and extract the appropriate binary
+        2. Copy `cloudflare.conf.sample` to `cloudflare.conf` and configure
+        3. Add your Cloudflare API token to `cloudflare.token`
+        4. Run `./cloudflare_renew` for automatic DNS management
+        
+        See the [README](https://github.com/jmsmuy/cloudflare-renew/blob/main/README.md) for detailed setup instructions.
+        EOF
+        
+        # Create the release
+        gh release create "$VERSION" \
+          --title "Cloudflare DNS Renew $VERSION" \
+          --notes-file release_notes.md \
+          --latest
 
   build-linux:
     name: Build Linux Binaries
@@ -195,14 +203,15 @@ jobs:
         ls -lh release/cloudflare-renew-linux-x64.tar.gz
         
     - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./release/cloudflare-renew-linux-x64.tar.gz
-        asset_name: cloudflare-renew-linux-x64.tar.gz
-        asset_content_type: application/gzip
+      run: |
+        VERSION="${{ needs.create-release.outputs.tag_name }}"
+        
+        # Upload the binary package to the release
+        gh release upload "$VERSION" \
+          ./release/cloudflare-renew-linux-x64.tar.gz \
+          --clobber
         
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
