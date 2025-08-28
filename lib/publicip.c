@@ -54,7 +54,7 @@ char *get_public_ip(void)
 
         if (res == CURLE_OK && response.data && response.size > 0) {
             // Trim any whitespace/newlines from the response
-            char *trimmed_ip = trim_whitespace(response.data);
+            const char *trimmed_ip = trim_whitespace(response.data);
             if (trimmed_ip && strlen(trimmed_ip) > 0) {
                 result = strdup(trimmed_ip);
             }

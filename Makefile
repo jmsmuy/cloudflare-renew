@@ -150,9 +150,11 @@ lint-cppcheck:
 			--suppress=missingIncludeSystem \
 			--suppress=unusedFunction:tests/* \
 			--suppress=checkersReport \
+			--suppress=normalCheckLevelMaxBranches \
+			--suppress=unmatchedSuppression \
 			-I lib/ \
 			-I . \
-			cloudflare_renew.c lib/ tools/ tests/ || true; \
+			cloudflare_renew.c lib/ tools/ tests/; \
 		echo "✅ cppcheck analysis complete"; \
 	else \
 		echo "❌ cppcheck not found. Run 'make install-tools' first."; \
@@ -163,9 +165,10 @@ lint-cppcheck:
 lint-clang-tidy:
 	@echo "🔍 Running clang-tidy analysis..."
 	@if command -v clang-tidy >/dev/null 2>&1; then \
-		find . -name "*.c" | grep -E "(lib|tools|cloudflare_renew)" | while read file; do \
+		set -e; \
+		for file in $$(find . -name "*.c" | grep -E "(lib|tools|cloudflare_renew)"); do \
 			echo "Analyzing $$file..."; \
-			clang-tidy $$file -- $(CFLAGS) -I. -I./lib || true; \
+			clang-tidy $$file -- $(CFLAGS) -I. -I./lib; \
 		done; \
 		echo "✅ clang-tidy analysis complete"; \
 	else \

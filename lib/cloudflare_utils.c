@@ -147,7 +147,7 @@ cloudflare_config_t *load_cloudflare_config(const char *config_file, const char 
             continue;
 
         *equals = '\0';
-        char *key = trim_whitespace(trimmed);
+        const char *key = trim_whitespace(trimmed);
 
         char base_key[64];
         int index = parse_array_index(key, base_key, sizeof(base_key));
@@ -186,8 +186,8 @@ cloudflare_config_t *load_cloudflare_config(const char *config_file, const char 
             continue;
 
         *equals = '\0';
-        char *key = trim_whitespace(trimmed);
-        char *value = trim_whitespace(equals + 1);
+        const char *key = trim_whitespace(trimmed);
+        const char *value = trim_whitespace(equals + 1);
 
         char base_key[64];
         int index = parse_array_index(key, base_key, sizeof(base_key));
@@ -214,7 +214,7 @@ cloudflare_config_t *load_cloudflare_config(const char *config_file, const char 
 
     // Validate that at least the first entry has all required fields
     if (config->entry_count > 0) {
-        cloudflare_entry_t *first_entry = &config->entries[0];
+        const cloudflare_entry_t *first_entry = &config->entries[0];
         if (!first_entry->zone_id || !first_entry->dns_record_id || !first_entry->domain_name) {
             fprintf(stderr, "Error: First entry missing required fields\n");
             free_cloudflare_config(config);

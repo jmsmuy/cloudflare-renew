@@ -46,7 +46,7 @@ char *get_cloudflare_ip(const char *config_file, const char *token_file, const c
     }
 
     // Determine which entry to use
-    cloudflare_entry_t *entry = NULL;
+    const cloudflare_entry_t *entry = NULL;
     if (domain_name) {
         entry = find_entry_by_domain(config, domain_name);
     } else {
