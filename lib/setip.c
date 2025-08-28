@@ -42,7 +42,7 @@ int set_cloudflare_ip(const char *config_file, const char *token_file, const cha
     }
 
     // Determine which entry to use
-    cloudflare_entry_t *entry = NULL;
+    const cloudflare_entry_t *entry = NULL;
     if (domain_name) {
         entry = find_entry_by_domain(config, domain_name);
     } else {
@@ -68,8 +68,8 @@ int set_cloudflare_ip(const char *config_file, const char *token_file, const cha
         return 1;
     }
 
-    CURL *curl;
-    CURLcode res;
+    CURL *curl = NULL;
+    CURLcode res = CURLE_OK;
     struct http_response response;
     int result = 1; // Default to failure
 
@@ -122,7 +122,7 @@ int set_cloudflare_ip(const char *config_file, const char *token_file, const cha
                         for (int i = 0; i < content_count; i++) {
                             free(content_values[i]);
                         }
-                        free(content_values);
+                        free((void *) content_values);
                     }
                 }
 

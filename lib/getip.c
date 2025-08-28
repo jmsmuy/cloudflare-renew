@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "getip.h"
 
 #include "cloudflare_utils.h"
@@ -21,19 +22,19 @@ static char *extract_ip_from_json(const char *json_text)
     int count = 0;
     char **content_values = get_string_values(root, "content", &count);
 
-    char *ip = NULL;
+    char *ip_address = NULL;
     if (content_values && count > 0) {
-        ip = strdup(content_values[0]);
+        ip_address = strdup(content_values[0]);
 
         // Free the array of strings
         for (int i = 0; i < count; i++) {
             free(content_values[i]);
         }
-        free(content_values);
+        free((void *) content_values);
     }
 
     free(root);
-    return ip;
+    return ip_address;
 }
 
 // Get IP from Cloudflare DNS
@@ -45,7 +46,7 @@ char *get_cloudflare_ip(const char *config_file, const char *token_file, const c
     }
 
     // Determine which entry to use
-    cloudflare_entry_t *entry = NULL;
+    const cloudflare_entry_t *entry = NULL;
     if (domain_name) {
         entry = find_entry_by_domain(config, domain_name);
     } else {
@@ -57,8 +58,8 @@ char *get_cloudflare_ip(const char *config_file, const char *token_file, const c
         return NULL;
     }
 
-    CURL *curl;
-    CURLcode res;
+    CURL *curl = NULL;
+    CURLcode res = CURLE_OK;
     struct http_response response;
     char *result = NULL;
 

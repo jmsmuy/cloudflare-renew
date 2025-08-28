@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "cloudflare_utils.h"
 
 #include <stdio.h>
@@ -7,7 +8,7 @@
 // Helper function to trim whitespace
 char *trim_whitespace(char *str)
 {
-    char *end;
+    char *end = NULL;
 
     // Trim leading space
     while (*str == ' ' || *str == '\t' || *str == '\n' || *str == '\r')
@@ -28,7 +29,7 @@ char *trim_whitespace(char *str)
 }
 
 // Helper function to read a single value from file (like the old read_value_from_file)
-char *read_token_from_file(const char *filename)
+static char *read_token_from_file(const char *filename)
 {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -78,14 +79,14 @@ char *read_token_from_file(const char *filename)
 }
 
 // Parse array index from key like "ZONE_ID[0]"
-int parse_array_index(const char *key, char *base_key, size_t base_key_size)
+static int parse_array_index(const char *key, char *base_key, size_t base_key_size)
 {
-    char *bracket_start = strchr(key, '[');
+    const char *bracket_start = strchr(key, '[');
     if (!bracket_start) {
         return -1; // Not an array format
     }
 
-    char *bracket_end = strchr(bracket_start, ']');
+    const char *bracket_end = strchr(bracket_start, ']');
     if (!bracket_end) {
         return -1; // Invalid format
     }
@@ -107,7 +108,9 @@ int parse_array_index(const char *key, char *base_key, size_t base_key_size)
     strncpy(index_str, bracket_start + 1, index_len);
     index_str[index_len] = '\0';
 
-    return atoi(index_str);
+    char *endptr = NULL;
+    long result = strtol(index_str, &endptr, 10);
+    return (int) result;
 }
 
 // Load configuration from two separate files
@@ -146,7 +149,7 @@ cloudflare_config_t *load_cloudflare_config(const char *config_file, const char 
             continue;
 
         *equals = '\0';
-        char *key = trim_whitespace(trimmed);
+        const char *key = trim_whitespace(trimmed);
 
         char base_key[64];
         int index = parse_array_index(key, base_key, sizeof(base_key));
@@ -173,7 +176,11 @@ cloudflare_config_t *load_cloudflare_config(const char *config_file, const char 
     }
 
     // Second pass: parse values
-    rewind(file);
+    if (fseek(file, 0, SEEK_SET) != 0) {
+        free_cloudflare_config(config);
+        fclose(file);
+        return NULL;
+    }
     while (fgets(line, sizeof(line), file)) {
         char *trimmed = trim_whitespace(line);
         if (strlen(trimmed) == 0 || trimmed[0] == '#') {
@@ -185,8 +192,8 @@ cloudflare_config_t *load_cloudflare_config(const char *config_file, const char 
             continue;
 
         *equals = '\0';
-        char *key = trim_whitespace(trimmed);
-        char *value = trim_whitespace(equals + 1);
+        const char *key = trim_whitespace(trimmed);
+        const char *value = trim_whitespace(equals + 1);
 
         char base_key[64];
         int index = parse_array_index(key, base_key, sizeof(base_key));
@@ -213,7 +220,7 @@ cloudflare_config_t *load_cloudflare_config(const char *config_file, const char 
 
     // Validate that at least the first entry has all required fields
     if (config->entry_count > 0) {
-        cloudflare_entry_t *first_entry = &config->entries[0];
+        const cloudflare_entry_t *first_entry = &config->entries[0];
         if (!first_entry->zone_id || !first_entry->dns_record_id || !first_entry->domain_name) {
             fprintf(stderr, "Error: First entry missing required fields\n");
             free_cloudflare_config(config);
@@ -275,8 +282,6 @@ void build_cloudflare_dns_url(char *url_buffer,
                               const char *domain_name,
                               const char *record_type)
 {
-    const char *base_url = "https://api.cloudflare.com/client/v4/zones/%s/dns_records";
-
     if (dns_record_id != NULL) {
         // For specific record operations (PUT/DELETE) - setip
         snprintf(url_buffer,
@@ -294,6 +299,7 @@ void build_cloudflare_dns_url(char *url_buffer,
                  record_type);
     } else {
         // Just the base URL for listing all records
+        const char *base_url = "https://api.cloudflare.com/client/v4/zones/%s/dns_records";
         snprintf(url_buffer, buffer_size, base_url, zone_id);
     }
 }

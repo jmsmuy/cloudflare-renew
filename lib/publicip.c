@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "publicip.h"
 
 #include "http_utils.h"
@@ -10,7 +11,7 @@
 // Helper function to trim whitespace
 static char *trim_whitespace(char *str)
 {
-    char *end;
+    char *end = NULL;
 
     // Trim leading space
     while (*str == ' ' || *str == '\t' || *str == '\n' || *str == '\r')
@@ -33,7 +34,7 @@ static char *trim_whitespace(char *str)
 // Get public IP from ipinfo.io
 char *get_public_ip(void)
 {
-    CURL *curl;
+    CURL *curl = NULL;
     CURLcode res;
     struct http_response response;
     char *result = NULL;
@@ -53,7 +54,7 @@ char *get_public_ip(void)
 
         if (res == CURLE_OK && response.data && response.size > 0) {
             // Trim any whitespace/newlines from the response
-            char *trimmed_ip = trim_whitespace(response.data);
+            const char *trimmed_ip = trim_whitespace(response.data);
             if (trimmed_ip && strlen(trimmed_ip) > 0) {
                 result = strdup(trimmed_ip);
             }

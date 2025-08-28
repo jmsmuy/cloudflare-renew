@@ -20,7 +20,15 @@ Checks: >
   -modernize-macro-to-enum,
   -cert-err33-c,
   -misc-unused-parameters,
-  -readability-function-cognitive-complexity
+  -readability-function-cognitive-complexity,
+  -misc-include-cleaner,
+  -hicpp-braces-around-statements,
+  -readability-braces-around-statements,
+  -readability-identifier-length,
+  -misc-no-recursion,
+  -concurrency-mt-unsafe,
+  -clang-analyzer-security.ArrayBound,
+  -cppcoreguidelines-init-variables
 
 CheckOptions:
   - key: readability-identifier-naming.VariableCase

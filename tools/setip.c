@@ -1,5 +1,6 @@
 #include "../lib/setip.h"
 
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -22,8 +23,8 @@ int main(int argc, char *argv[])
     if (result == 0) {
         printf("✅ IP successfully updated to %s\n", ip_address);
         return 0;
-    } else {
-        printf("❌ Failed to update IP\n");
-        return 1;
     }
+
+    printf("❌ Failed to update IP\n");
+    return 1;
 }
