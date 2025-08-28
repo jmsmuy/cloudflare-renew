@@ -9,7 +9,7 @@ A C-based dynamic DNS client for Cloudflare that automatically updates DNS recor
 - **Multi-Domain Support**: Manages multiple domains from a single configuration
 - **State Tracking**: Remembers last IP to avoid unnecessary updates
 - **Comprehensive Logging**: Logs all operations to `cloudflare.log`
-- **Cross-Platform**: Compiles for x86_64 and MIPS64EL architectures
+- **Cross-Platform**: Compiles for multiple architectures
 - **Static Linking**: Produces standalone binaries with no dependencies
 
 ## Project Structure
@@ -69,11 +69,6 @@ your_cloudflare_api_token_here
 make
 ```
 
-### Cross-compile for MIPS64EL (OpenWrt)
-```bash
-make mips
-```
-
 ### Build individual components
 ```bash
 make tools          # Build all tools
@@ -122,14 +117,6 @@ This is the main program that:
 This tool uses the Cloudflare v4 API:
 - **GET** `/zones/{zone_id}/dns_records/{record_id}` - Get DNS record
 - **PUT** `/zones/{zone_id}/dns_records/{record_id}` - Update DNS record
-
-## Cross-Compilation
-
-The project supports cross-compilation for MIPS64EL architecture (commonly used in OpenWrt routers) using Docker:
-
-```bash
-make mips-docker  # Uses Debian Bullseye with mips64el toolchain
-```
 
 ## Logging
 
