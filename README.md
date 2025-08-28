@@ -155,4 +155,6 @@ All operations are logged to `cloudflare.log` with timestamps:
 
 ## License
 
-GNU General Public License v3.0 - see LICENSE file for details.
+GNU Affero General Public License v3.0 - see LICENSE file for details.
+
+**Important Note**: This project uses AGPL v3, which requires that if you modify this software and make it available to users over a network (e.g., as a web service), you must also provide the source code of your modifications to those users.
