@@ -2,10 +2,9 @@
 #include "getip.h"
 
 #include "cloudflare_utils.h"
-#include "http_utils.h"
+#include "socket_http.h"
 #include "json.h"
 
-#include <curl/curl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -58,40 +57,29 @@ char *get_cloudflare_ip(const char *config_file, const char *token_file, const c
         return NULL;
     }
 
-    CURL *curl = NULL;
-    CURLcode res = CURLE_OK;
     struct http_response response;
     char *result = NULL;
 
     http_response_init(&response);
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    curl = curl_easy_init();
 
-    if (curl) {
-        struct curl_slist *headers = NULL;
-        char auth_header[512];
-        snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", config->cloudflare_token);
-        headers = curl_slist_append(headers, auth_header);
-        headers = curl_slist_append(headers, "Content-Type: application/json");
+    // Build headers
+    struct http_header *headers = NULL;
+    char auth_header[512];
+    snprintf(auth_header, sizeof(auth_header), "Bearer %s", config->cloudflare_token);
+    headers = http_header_add(headers, "Authorization", auth_header);
+    headers = http_header_add(headers, "Content-Type", "application/json");
 
-        char api_url[1024];
-        build_cloudflare_dns_url(api_url, sizeof(api_url), entry->zone_id, NULL, entry->domain_name, "A");
+    char api_url[1024];
+    build_cloudflare_dns_url(api_url, sizeof(api_url), entry->zone_id, NULL, entry->domain_name, "A");
 
-        curl_easy_setopt(curl, CURLOPT_URL, api_url);
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, http_write_callback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &response);
+    // Keep HTTPS for Cloudflare API
 
-        res = curl_easy_perform(curl);
-        if (res == CURLE_OK && response.data) {
-            result = extract_ip_from_json(response.data);
-        }
-
-        curl_slist_free_all(headers);
-        curl_easy_cleanup(curl);
+    int http_result = http_request(api_url, HTTP_GET, NULL, headers, &response);
+    if (http_result == 0 && response.success && response.data) {
+        result = extract_ip_from_json(response.data);
     }
 
-    curl_global_cleanup();
+    http_headers_free(headers);
     http_response_free(&response);
     free_cloudflare_config(config);
     return result;
