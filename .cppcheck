@@ -1,0 +1,31 @@
+# Cppcheck Configuration for Cloudflare DNS Renew
+
+# Enable all checks
+enable=all
+
+# Suppress specific warnings that are not relevant for our project
+suppress=missingIncludeSystem
+suppress=unusedFunction:tests/*
+suppress=checkersReport
+
+# Include paths
+-I lib/
+-I .
+
+# Define macros for conditional compilation
+-D__GNUC__
+
+# Language standard
+--std=c99
+
+# Error format
+--template=gcc
+
+# Verbose output
+--verbose
+
+# Check all configurations
+--force
+
+# Platform
+--platform=unix64

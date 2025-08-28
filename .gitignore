@@ -38,6 +38,11 @@ cloudflare.conf
 openssl-*
 *.tar.gz
 
+# Linting and formatting temporary files
+.clang-tidy-cache/
+compile_commands.json
+*.plist
+
 # OS files
 .DS_Store
 Thumbs.db

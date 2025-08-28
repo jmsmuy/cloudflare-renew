@@ -1,9 +1,11 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include "../lib/publicip.h"
 
-int main(void) {
-    char* ip = get_public_ip();
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(void)
+{
+    char *ip = get_public_ip();
     if (ip) {
         printf("%s\n", ip);
         free(ip);

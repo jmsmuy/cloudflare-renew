@@ -64,6 +64,14 @@ your_cloudflare_api_token_here
 - OpenSSL development headers
 - zlib development headers
 
+### Development Tools (Optional)
+For code formatting and linting:
+- clang-format (code formatting)
+- clang-tidy (static analysis)
+- cppcheck (additional static analysis)
+
+Install with: `make install-tools`
+
 ### Compile for local architecture
 ```bash
 make
@@ -74,6 +82,14 @@ make
 make tools          # Build all tools
 make tests           # Build all tests
 make clean           # Clean build artifacts
+```
+
+### Code quality and formatting
+```bash
+make install-tools  # Install development tools (clang-format, clang-tidy, cppcheck)
+make format         # Format all source code
+make check-format   # Check if code is properly formatted
+make lint           # Run all linters (cppcheck, clang-tidy)
 ```
 
 ## Usage
@@ -133,6 +149,22 @@ All operations are logged to `cloudflare.log` with timestamps:
 - Returns exit code 0 on success, 1 on failure
 - Detailed error messages in logs
 - Graceful handling of API errors and network issues
+
+## Code Quality
+
+This project includes comprehensive code quality tools:
+
+- **Automatic Formatting**: Uses `clang-format` with consistent C99 style
+- **Static Analysis**: `cppcheck` for bug detection and code quality
+- **Linting**: `clang-tidy` for additional code analysis and best practices
+- **Pre-configured**: All tools come with project-specific configurations
+
+### Running Quality Checks
+```bash
+make format         # Format all code automatically
+make check-format   # Verify code formatting
+make lint           # Run all static analysis tools
+```
 
 ## Security
 

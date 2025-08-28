@@ -29,27 +29,27 @@ struct json_root {
 };
 
 // Function declarations
-struct json_root* parse_json(const char* json_string);
+struct json_root *parse_json(const char *json_string);
 
 // Helper functions
-struct json_object* find_object_by_key(struct json_object* head, const char* key);
-int count_objects(struct json_object* head);
+struct json_object *find_object_by_key(struct json_object *head, const char *key);
+int count_objects(struct json_object *head);
 
 // Object creation functions
-struct json_object* create_string_object(const char* key, const char* value);
-struct json_object* create_number_object(const char* key, double value);
-struct json_object* create_boolean_object(const char* key, bool value);
-struct json_object* create_null_object(const char* key);
-struct json_object* create_empty_object(const char* key, bool is_array);
-void append_object(struct json_object** head, struct json_object* new_obj);
+struct json_object *create_string_object(const char *key, const char *value);
+struct json_object *create_number_object(const char *key, double value);
+struct json_object *create_boolean_object(const char *key, bool value);
+struct json_object *create_null_object(const char *key);
+struct json_object *create_empty_object(const char *key, bool is_array);
+void append_object(struct json_object **head, struct json_object *new_obj);
 
 // Recursive search functions - return arrays of matching values
-char** get_string_values(struct json_root* root, const char* key, int* count);
-double* get_number_values(struct json_root* root, const char* key, int* count);
-bool* get_boolean_values(struct json_root* root, const char* key, int* count);
-bool* get_null_values(struct json_root* root, const char* key, int* count);
+char **get_string_values(struct json_root *root, const char *key, int *count);
+double *get_number_values(struct json_root *root, const char *key, int *count);
+bool *get_boolean_values(struct json_root *root, const char *key, int *count);
+bool *get_null_values(struct json_root *root, const char *key, int *count);
 
 // Serialization function - convert json_root back to JSON string
-char* json_to_string(struct json_root* root);
+char *json_to_string(struct json_root *root);
 
 #endif // JSON_H

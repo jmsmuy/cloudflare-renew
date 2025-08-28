@@ -1,0 +1,45 @@
+# Clang-Tidy Configuration for Cloudflare DNS Renew
+# Focuses on C-specific checks and best practices
+
+Checks: >
+  bugprone-*,
+  cert-*,
+  clang-analyzer-*,
+  concurrency-*,
+  cppcoreguidelines-*,
+  hicpp-*,
+  misc-*,
+  modernize-*,
+  performance-*,
+  portability-*,
+  readability-*,
+  security-*,
+  -bugprone-easily-swappable-parameters,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -readability-magic-numbers,
+  -modernize-macro-to-enum,
+  -cert-err33-c,
+  -misc-unused-parameters,
+  -readability-function-cognitive-complexity
+
+CheckOptions:
+  - key: readability-identifier-naming.VariableCase
+    value: lower_case
+  - key: readability-identifier-naming.FunctionCase
+    value: lower_case
+  - key: readability-identifier-naming.MacroCase
+    value: UPPER_CASE
+  - key: readability-identifier-naming.StructCase
+    value: lower_case
+  - key: readability-identifier-naming.TypedefCase
+    value: lower_case
+  - key: readability-braces-around-statements.ShortStatementLines
+    value: 1
+  - key: performance-move-const-arg.CheckTriviallyCopyableMove
+    value: false
+
+HeaderFilterRegex: '(lib|tools|tests)/.*\.h$'
+
+WarningsAsErrors: ''
+
+FormatStyle: file
