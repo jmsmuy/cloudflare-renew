@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "getip.h"
 
 #include "cloudflare_utils.h"

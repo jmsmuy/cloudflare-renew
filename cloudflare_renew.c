@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "lib/getip.h"
 #include "lib/publicip.h"
 #include "lib/setip.h"
