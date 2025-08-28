@@ -29,7 +29,7 @@ char *trim_whitespace(char *str)
 }
 
 // Helper function to read a single value from file (like the old read_value_from_file)
-char *read_token_from_file(const char *filename)
+static char *read_token_from_file(const char *filename)
 {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -79,14 +79,14 @@ char *read_token_from_file(const char *filename)
 }
 
 // Parse array index from key like "ZONE_ID[0]"
-int parse_array_index(const char *key, char *base_key, size_t base_key_size)
+static int parse_array_index(const char *key, char *base_key, size_t base_key_size)
 {
-    char *bracket_start = strchr(key, '[');
+    const char *bracket_start = strchr(key, '[');
     if (!bracket_start) {
         return -1; // Not an array format
     }
 
-    char *bracket_end = strchr(bracket_start, ']');
+    const char *bracket_end = strchr(bracket_start, ']');
     if (!bracket_end) {
         return -1; // Invalid format
     }
@@ -276,8 +276,6 @@ void build_cloudflare_dns_url(char *url_buffer,
                               const char *domain_name,
                               const char *record_type)
 {
-    const char *base_url = "https://api.cloudflare.com/client/v4/zones/%s/dns_records";
-
     if (dns_record_id != NULL) {
         // For specific record operations (PUT/DELETE) - setip
         snprintf(url_buffer,
@@ -295,6 +293,7 @@ void build_cloudflare_dns_url(char *url_buffer,
                  record_type);
     } else {
         // Just the base URL for listing all records
+        const char *base_url = "https://api.cloudflare.com/client/v4/zones/%s/dns_records";
         snprintf(url_buffer, buffer_size, base_url, zone_id);
     }
 }

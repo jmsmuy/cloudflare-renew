@@ -16,7 +16,7 @@
 #define LOG_FILE "cloudflare.log"
 
 // Function to write log messages with timestamp
-void write_log(const char *message)
+static void write_log(const char *message)
 {
     FILE *log = fopen(LOG_FILE, "a");
     if (!log) {
@@ -34,7 +34,7 @@ void write_log(const char *message)
 }
 
 // Function to read IP from file
-char *read_ip_from_file(const char *filename)
+static char *read_ip_from_file(const char *filename)
 {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -63,7 +63,7 @@ char *read_ip_from_file(const char *filename)
 }
 
 // Function to write IP to file
-int write_ip_to_file(const char *filename, const char *ip)
+static int write_ip_to_file(const char *filename, const char *ip)
 {
     FILE *file = fopen(filename, "w");
     if (!file) {
@@ -76,7 +76,7 @@ int write_ip_to_file(const char *filename, const char *ip)
 }
 
 // Function to get all domain names from config
-char **get_all_domains(int *count)
+static char **get_all_domains(int *count)
 {
     FILE *file = fopen(CONFIG_FILE, "r");
     if (!file) {
@@ -104,7 +104,13 @@ char **get_all_domains(int *count)
                 }
 
                 if (strlen(domain) > 0) {
-                    domains = realloc(domains, (*count + 1) * sizeof(char *));
+                    char **new_domains = realloc(domains, (*count + 1) * sizeof(char *));
+                    if (!new_domains) {
+                        free(domains);
+                        fclose(file);
+                        return NULL;
+                    }
+                    domains = new_domains;
                     domains[*count] = strdup(domain);
                     (*count)++;
                 }
