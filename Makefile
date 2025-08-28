@@ -3,14 +3,14 @@
 
 # Compiler settings
 CC=gcc
-CFLAGS=-Wall -Wextra -std=c99
-LIBS=-lcurl
+CFLAGS=-Wall -Wextra -std=c99 -I/opt/homebrew/opt/openssl@3/include
+LIBS=-L/opt/homebrew/opt/openssl@3/lib -lssl -lcrypto
 LIBDIR=lib
 TESTDIR=tests
 
 # Library files
-LIB_SOURCES=$(LIBDIR)/json.c $(LIBDIR)/cloudflare_utils.c $(LIBDIR)/http_utils.c $(LIBDIR)/publicip.c $(LIBDIR)/getip.c $(LIBDIR)/setip.c
-LIB_HEADERS=$(LIBDIR)/json.h $(LIBDIR)/cloudflare_utils.h $(LIBDIR)/http_utils.h $(LIBDIR)/publicip.h $(LIBDIR)/getip.h $(LIBDIR)/setip.h
+LIB_SOURCES=$(LIBDIR)/json.c $(LIBDIR)/cloudflare_utils.c $(LIBDIR)/socket_http.c $(LIBDIR)/publicip.c $(LIBDIR)/getip.c $(LIBDIR)/setip.c
+LIB_HEADERS=$(LIBDIR)/json.h $(LIBDIR)/cloudflare_utils.h $(LIBDIR)/socket_http.h $(LIBDIR)/publicip.h $(LIBDIR)/getip.h $(LIBDIR)/setip.h
 
 # Main programs
 PROGRAMS=tools/getip tools/setip tools/publicip cloudflare_renew
