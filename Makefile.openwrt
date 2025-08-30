@@ -1,0 +1,62 @@
+# OpenWrt Makefile for cloudflare-renew
+# This Makefile is designed to be used within OpenWrt's build system
+# Place this in package/cloudflare-renew/Makefile in your OpenWrt buildroot
+
+include $(TOPDIR)/rules.mk
+
+PKG_NAME:=cloudflare-renew
+PKG_VERSION:=1.0.0
+PKG_RELEASE:=1
+
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
+
+include $(INCLUDE_DIR)/package.mk
+
+define Package/cloudflare-renew
+  SECTION:=utils
+  CATEGORY:=Utilities
+  TITLE:=Cloudflare DNS Management Tools
+  DEPENDS:=+libopenssl +libpthread
+  MAINTAINER:=Your Name <your.email@example.com>
+endef
+
+define Package/cloudflare-renew/description
+  Tools for managing Cloudflare DNS records, including automatic IP updates
+endef
+
+# Tell OpenWrt where to find the source
+define Build/Prepare
+	mkdir -p $(PKG_BUILD_DIR)
+	$(CP) ./src/* $(PKG_BUILD_DIR)/
+endef
+
+# Configure build flags for MIPSEL
+TARGET_CFLAGS += -I$(STAGING_DIR)/usr/include
+TARGET_LDFLAGS += -L$(STAGING_DIR)/usr/lib -lssl -lcrypto -lpthread
+
+define Build/Compile
+	$(MAKE) -C $(PKG_BUILD_DIR) \
+		CC="$(TARGET_CC)" \
+		CFLAGS="$(TARGET_CFLAGS) -Wall -Wextra -std=c99" \
+		LDFLAGS="$(TARGET_LDFLAGS)" \
+		LIBS="-lssl -lcrypto" \
+		CROSS_COMPILE=1 \
+		all
+endef
+
+define Package/cloudflare-renew/install
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/cloudflare_renew $(1)/usr/bin/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/tools/getip $(1)/usr/bin/cloudflare-getip
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/tools/setip $(1)/usr/bin/cloudflare-setip
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/tools/publicip $(1)/usr/bin/cloudflare-publicip
+	
+	$(INSTALL_DIR) $(1)/etc/cloudflare
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/cloudflare.conf.sample $(1)/etc/cloudflare/cloudflare.conf.sample
+	
+	$(INSTALL_DIR) $(1)/usr/share/cloudflare
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/getip-all.sh $(1)/usr/share/cloudflare/
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/setip-all.sh $(1)/usr/share/cloudflare/
+endef
+
+$(eval $(call BuildPackage,cloudflare-renew))

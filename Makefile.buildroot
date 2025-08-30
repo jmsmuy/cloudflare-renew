@@ -1,0 +1,40 @@
+# Buildroot Makefile for cloudflare-renew
+# This is for integration with Buildroot build system
+# Place in package/cloudflare-renew/cloudflare-renew.mk
+
+################################################################################
+#
+# cloudflare-renew
+#
+################################################################################
+
+CLOUDFLARE_RENEW_VERSION = 1.0.0
+CLOUDFLARE_RENEW_SITE = $(BR2_EXTERNAL_PATH)/package/cloudflare-renew
+CLOUDFLARE_RENEW_SITE_METHOD = local
+CLOUDFLARE_RENEW_LICENSE = GPL-3.0
+CLOUDFLARE_RENEW_LICENSE_FILES = LICENSE
+
+CLOUDFLARE_RENEW_DEPENDENCIES = openssl
+
+define CLOUDFLARE_RENEW_BUILD_CMDS
+	$(MAKE) CC="$(TARGET_CC)" \
+		CFLAGS="$(TARGET_CFLAGS) -Wall -Wextra -std=c99" \
+		LDFLAGS="$(TARGET_LDFLAGS)" \
+		LIBS="-lssl -lcrypto -lpthread" \
+		-C $(@D) all
+endef
+
+define CLOUDFLARE_RENEW_INSTALL_TARGET_CMDS
+	$(INSTALL) -D -m 0755 $(@D)/cloudflare_renew \
+		$(TARGET_DIR)/usr/bin/cloudflare_renew
+	$(INSTALL) -D -m 0755 $(@D)/tools/getip \
+		$(TARGET_DIR)/usr/bin/cloudflare-getip
+	$(INSTALL) -D -m 0755 $(@D)/tools/setip \
+		$(TARGET_DIR)/usr/bin/cloudflare-setip
+	$(INSTALL) -D -m 0755 $(@D)/tools/publicip \
+		$(TARGET_DIR)/usr/bin/cloudflare-publicip
+	$(INSTALL) -D -m 0644 $(@D)/cloudflare.conf.sample \
+		$(TARGET_DIR)/etc/cloudflare/cloudflare.conf.sample
+endef
+
+$(eval $(generic-package))
