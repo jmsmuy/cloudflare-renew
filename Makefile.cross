@@ -1,0 +1,139 @@
+# Cross-compilation Makefile for cloudflare-renew
+# For MIPSEL-24k architecture (OpenWrt routers)
+# Usage: make -f Makefile.cross [target]
+
+# Cross-compilation toolchain settings
+# Adjust these paths to match your OpenWrt SDK installation
+STAGING_DIR ?= $(HOME)/openwrt-sdk/staging_dir
+TOOLCHAIN_DIR ?= $(STAGING_DIR)/toolchain-mipsel_24kc_gcc-*_musl
+TARGET_DIR ?= $(STAGING_DIR)/target-mipsel_24kc_musl
+
+# Cross-compiler settings
+CROSS_COMPILE ?= mipsel-openwrt-linux-musl-
+CC = $(CROSS_COMPILE)gcc
+AR = $(CROSS_COMPILE)ar
+STRIP = $(CROSS_COMPILE)strip
+
+# Architecture-specific flags for MIPSEL-24k
+ARCH_FLAGS = -march=24kc -mtune=24kc -msoft-float
+
+# Include and library paths
+CFLAGS = -Wall -Wextra -std=c99 -Os $(ARCH_FLAGS) \
+         -I$(TARGET_DIR)/usr/include \
+         -I$(TOOLCHAIN_DIR)/usr/include \
+         -I./lib \
+         -DCROSS_COMPILE
+
+LDFLAGS = -L$(TARGET_DIR)/usr/lib \
+          -L$(TOOLCHAIN_DIR)/usr/lib
+
+LIBS = -lssl -lcrypto -lpthread
+
+# Source files
+LIBDIR = lib
+TESTDIR = tests
+LIB_SOURCES = $(LIBDIR)/json.c \
+              $(LIBDIR)/cloudflare_utils.c \
+              $(LIBDIR)/socket_http.c \
+              $(LIBDIR)/publicip.c \
+              $(LIBDIR)/getip.c \
+              $(LIBDIR)/setip.c
+
+LIB_HEADERS = $(LIBDIR)/json.h \
+              $(LIBDIR)/cloudflare_utils.h \
+              $(LIBDIR)/socket_http.h \
+              $(LIBDIR)/publicip.h \
+              $(LIBDIR)/getip.h \
+              $(LIBDIR)/setip.h
+
+LIB_OBJECTS = $(LIB_SOURCES:.c=.o)
+
+# Main programs
+PROGRAMS = tools/getip tools/setip tools/publicip cloudflare_renew
+
+.PHONY: all clean strip install help setup-env
+
+# Default target
+all: $(PROGRAMS)
+	@echo "Build complete for MIPSEL-24k architecture"
+
+# Pattern rule for object files
+%.o: %.c $(LIB_HEADERS)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Build library archive
+libcloudflare.a: $(LIB_OBJECTS)
+	$(AR) rcs $@ $^
+
+# Build main programs
+tools/getip: tools/getip.o libcloudflare.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -L. -lcloudflare $(LIBS)
+
+tools/setip: tools/setip.o libcloudflare.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -L. -lcloudflare $(LIBS)
+
+tools/publicip: tools/publicip.o libcloudflare.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -L. -lcloudflare $(LIBS)
+
+cloudflare_renew: cloudflare_renew.o libcloudflare.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -L. -lcloudflare $(LIBS)
+
+# Strip binaries for smaller size (important for embedded systems)
+strip: $(PROGRAMS)
+	$(STRIP) $(PROGRAMS)
+	@echo "Binaries stripped for deployment"
+
+# Clean build artifacts
+clean:
+	rm -f $(PROGRAMS)
+	rm -f $(LIB_OBJECTS)
+	rm -f tools/*.o
+	rm -f cloudflare_renew.o
+	rm -f libcloudflare.a
+
+# Install to a staging directory
+DESTDIR ?= ./install
+install: $(PROGRAMS) strip
+	mkdir -p $(DESTDIR)/usr/bin
+	cp cloudflare_renew $(DESTDIR)/usr/bin/
+	cp tools/getip $(DESTDIR)/usr/bin/cloudflare-getip
+	cp tools/setip $(DESTDIR)/usr/bin/cloudflare-setip
+	cp tools/publicip $(DESTDIR)/usr/bin/cloudflare-publicip
+	mkdir -p $(DESTDIR)/etc/cloudflare
+	cp cloudflare.conf.sample $(DESTDIR)/etc/cloudflare/
+	@echo "Installation complete to $(DESTDIR)"
+
+# Help
+help:
+	@echo "Cross-compilation Makefile for MIPSEL-24k (OpenWrt)"
+	@echo ""
+	@echo "Prerequisites:"
+	@echo "  1. Download and extract OpenWrt SDK for your target"
+	@echo "  2. Set environment variables or edit this Makefile:"
+	@echo "     export STAGING_DIR=/path/to/openwrt-sdk/staging_dir"
+	@echo "     export TOOLCHAIN_DIR=\$$STAGING_DIR/toolchain-mipsel_24kc_gcc-*_musl"
+	@echo "     export TARGET_DIR=\$$STAGING_DIR/target-mipsel_24kc_musl"
+	@echo ""
+	@echo "Available targets:"
+	@echo "  all       - Build all programs (default)"
+	@echo "  strip     - Strip debug symbols from binaries"
+	@echo "  clean     - Remove all built files"
+	@echo "  install   - Install to DESTDIR (default: ./install)"
+	@echo "  help      - Show this help message"
+	@echo ""
+	@echo "Usage examples:"
+	@echo "  make -f Makefile.cross"
+	@echo "  make -f Makefile.cross strip"
+	@echo "  make -f Makefile.cross install DESTDIR=/tmp/cloudflare"
+	@echo ""
+	@echo "To setup OpenWrt SDK environment:"
+	@echo "  make -f Makefile.cross setup-env"
+
+# Helper to setup environment
+setup-env:
+	@echo "# Add these lines to your shell configuration:"
+	@echo "export STAGING_DIR=$(STAGING_DIR)"
+	@echo "export PATH=\$$PATH:$(TOOLCHAIN_DIR)/bin"
+	@echo ""
+	@echo "# Or source this before building:"
+	@echo "source ./setup-openwrt-env.sh"

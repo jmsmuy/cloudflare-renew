@@ -1,0 +1,194 @@
+# Standalone MIPSEL cross-compilation Makefile
+# For generic MIPSEL cross-compilation (works with various toolchains)
+# Usage: make -f Makefile.mipsel [target]
+
+# Cross-compiler prefix
+# Common options:
+# - mipsel-linux-gnu-         (Debian/Ubuntu package: gcc-mipsel-linux-gnu)
+# - mipsel-unknown-linux-gnu-  (Custom built toolchain)
+# - mipsel-openwrt-linux-      (OpenWrt toolchain)
+CROSS_COMPILE ?= mipsel-linux-gnu-
+
+# Toolchain binaries
+CC = $(CROSS_COMPILE)gcc
+AR = $(CROSS_COMPILE)ar
+STRIP = $(CROSS_COMPILE)strip
+OBJCOPY = $(CROSS_COMPILE)objcopy
+
+# Target architecture flags
+# -march=24kc: MIPS 24Kc processor
+# -mtune=24kc: Optimize for 24Kc
+# -msoft-float: Use software floating point (common in routers)
+ARCH_FLAGS = -march=24kc -mtune=24kc -msoft-float
+
+# Compilation flags
+CFLAGS = -Wall -Wextra -std=c99 -Os $(ARCH_FLAGS) \
+         -ffunction-sections -fdata-sections \
+         -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L
+
+# Linker flags
+LDFLAGS = -Wl,--gc-sections -static
+
+# Libraries - static linking for better portability
+LIBS = -lssl -lcrypto -lpthread -ldl
+
+# Source files
+LIBDIR = lib
+LIB_SOURCES = $(LIBDIR)/json.c \
+              $(LIBDIR)/cloudflare_utils.c \
+              $(LIBDIR)/socket_http.c \
+              $(LIBDIR)/publicip.c \
+              $(LIBDIR)/getip.c \
+              $(LIBDIR)/setip.c
+
+LIB_HEADERS = $(LIBDIR)/json.h \
+              $(LIBDIR)/cloudflare_utils.h \
+              $(LIBDIR)/socket_http.h \
+              $(LIBDIR)/publicip.h \
+              $(LIBDIR)/getip.h \
+              $(LIBDIR)/setip.h
+
+# Object files
+LIB_OBJECTS = $(LIB_SOURCES:.c=.o)
+
+# Target programs
+PROGRAMS = cloudflare_renew tools/getip tools/setip tools/publicip
+
+# Build directory for output
+BUILD_DIR = build-mipsel
+
+.PHONY: all clean strip size install toolchain-info help
+
+# Default target
+all: check-toolchain $(PROGRAMS)
+	@echo "✓ Build complete for MIPSEL-24k"
+	@echo "  Binaries are ready for deployment to OpenWrt routers"
+
+# Check if toolchain is available
+check-toolchain:
+	@which $(CC) > /dev/null 2>&1 || { \
+		echo "Error: $(CC) not found!"; \
+		echo "Please install MIPSEL cross-compiler toolchain:"; \
+		echo "  Ubuntu/Debian: sudo apt-get install gcc-mipsel-linux-gnu"; \
+		echo "  Or set CROSS_COMPILE to your toolchain prefix"; \
+		exit 1; \
+	}
+
+# Pattern rule for object files
+%.o: %.c $(LIB_HEADERS)
+	@echo "  CC    $<"
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+# Build static library
+libcloudflare.a: $(LIB_OBJECTS)
+	@echo "  AR    $@"
+	@$(AR) rcs $@ $^
+
+# Build programs with static linking
+cloudflare_renew: cloudflare_renew.o libcloudflare.a
+	@echo "  LD    $@"
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -L. -lcloudflare $(LIBS)
+
+tools/getip: tools/getip.o libcloudflare.a
+	@echo "  LD    $@"
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -L. -lcloudflare $(LIBS)
+
+tools/setip: tools/setip.o libcloudflare.a
+	@echo "  LD    $@"
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -L. -lcloudflare $(LIBS)
+
+tools/publicip: tools/publicip.o libcloudflare.a
+	@echo "  LD    $@"
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -L. -lcloudflare $(LIBS)
+
+# Strip binaries for smaller size
+strip: $(PROGRAMS)
+	@echo "Stripping binaries..."
+	@$(STRIP) -s $(PROGRAMS)
+	@echo "✓ Binaries stripped"
+
+# Show binary sizes
+size: $(PROGRAMS)
+	@echo "Binary sizes:"
+	@ls -lh $(PROGRAMS) | awk '{print "  " $$NF ": " $$5}'
+	@echo ""
+	@echo "Detailed size info:"
+	@$(CROSS_COMPILE)size $(PROGRAMS)
+
+# Create distribution package
+dist: all strip
+	@mkdir -p $(BUILD_DIR)/bin
+	@mkdir -p $(BUILD_DIR)/etc
+	@cp $(PROGRAMS) $(BUILD_DIR)/bin/
+	@cp cloudflare.conf.sample $(BUILD_DIR)/etc/
+	@cp *.sh $(BUILD_DIR)/bin/ 2>/dev/null || true
+	@tar czf cloudflare-renew-mipsel.tar.gz -C $(BUILD_DIR) .
+	@echo "✓ Distribution package created: cloudflare-renew-mipsel.tar.gz"
+
+# Install to target directory
+DESTDIR ?= /tmp/cloudflare-install
+install: all strip
+	@echo "Installing to $(DESTDIR)..."
+	@mkdir -p $(DESTDIR)/usr/bin
+	@mkdir -p $(DESTDIR)/etc/cloudflare
+	@cp cloudflare_renew $(DESTDIR)/usr/bin/
+	@cp tools/getip $(DESTDIR)/usr/bin/cloudflare-getip
+	@cp tools/setip $(DESTDIR)/usr/bin/cloudflare-setip
+	@cp tools/publicip $(DESTDIR)/usr/bin/cloudflare-publicip
+	@cp cloudflare.conf.sample $(DESTDIR)/etc/cloudflare/
+	@echo "✓ Installation complete"
+
+# Clean build artifacts
+clean:
+	@echo "Cleaning..."
+	@rm -f $(PROGRAMS)
+	@rm -f $(LIB_OBJECTS)
+	@rm -f tools/*.o
+	@rm -f cloudflare_renew.o
+	@rm -f libcloudflare.a
+	@rm -rf $(BUILD_DIR)
+	@rm -f cloudflare-renew-mipsel.tar.gz
+	@echo "✓ Clean complete"
+
+# Show toolchain information
+toolchain-info:
+	@echo "Toolchain Information:"
+	@echo "  Cross-compile prefix: $(CROSS_COMPILE)"
+	@echo "  Compiler: $(CC)"
+	@$(CC) --version | head -1
+	@echo "  Target: MIPSEL 24Kc"
+	@echo ""
+	@echo "Compiler flags:"
+	@echo "  CFLAGS: $(CFLAGS)"
+	@echo "  LDFLAGS: $(LDFLAGS)"
+	@echo "  LIBS: $(LIBS)"
+
+# Help
+help:
+	@echo "MIPSEL Cross-Compilation Makefile for OpenWrt Routers"
+	@echo ""
+	@echo "Quick Start:"
+	@echo "  1. Install MIPSEL toolchain:"
+	@echo "     Ubuntu/Debian: sudo apt-get install gcc-mipsel-linux-gnu"
+	@echo "  2. Build: make -f Makefile.mipsel"
+	@echo "  3. Strip: make -f Makefile.mipsel strip"
+	@echo ""
+	@echo "Available targets:"
+	@echo "  all           - Build all programs (default)"
+	@echo "  strip         - Strip debug symbols (reduces size ~70%)"
+	@echo "  size          - Show binary sizes"
+	@echo "  dist          - Create distribution tarball"
+	@echo "  install       - Install to DESTDIR"
+	@echo "  clean         - Remove build artifacts"
+	@echo "  toolchain-info- Show toolchain details"
+	@echo "  help          - Show this help"
+	@echo ""
+	@echo "Environment variables:"
+	@echo "  CROSS_COMPILE - Toolchain prefix (default: mipsel-linux-gnu-)"
+	@echo "  DESTDIR       - Installation directory (default: /tmp/cloudflare-install)"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make -f Makefile.mipsel"
+	@echo "  make -f Makefile.mipsel strip size"
+	@echo "  make -f Makefile.mipsel dist"
+	@echo "  CROSS_COMPILE=mipsel-openwrt-linux- make -f Makefile.mipsel"

@@ -1,0 +1,60 @@
+# Docker-based cross-compilation Makefile for cloudflare-renew
+# Build for MIPSEL-24k without needing local toolchain installation
+# Usage: make -f Makefile.docker [target]
+
+# Docker image with OpenWrt SDK
+DOCKER_IMAGE ?= openwrt/sdk:mipsel_24kc
+
+# Container name for persistent builds
+CONTAINER_NAME ?= cloudflare-renew-build
+
+# Architecture settings
+ARCH = mipsel-24kc
+TARGET_TRIPLE = mipsel-openwrt-linux-musl
+
+# Programs to build
+PROGRAMS = cloudflare_renew tools/getip tools/setip tools/publicip
+
+.PHONY: all docker-build docker-shell clean-docker help
+
+# Default target - build using Docker
+all: docker-build
+
+# Build inside Docker container
+docker-build:
+	@echo "Building cloudflare-renew for MIPSEL-24k using Docker..."
+	docker run --rm -v $(PWD):/src:ro -v $(PWD)/build-output:/output \
+		$(DOCKER_IMAGE) \
+		sh -c "cd /tmp && \
+		cp -r /src/* . && \
+		make -f Makefile.docker.internal && \
+		cp cloudflare_renew tools/getip tools/setip tools/publicip /output/"
+	@echo "Build complete! Binaries are in ./build-output/"
+
+# Interactive shell in Docker container for debugging
+docker-shell:
+	docker run --rm -it -v $(PWD):/src \
+		$(DOCKER_IMAGE) \
+		/bin/bash
+
+# Clean Docker artifacts
+clean-docker:
+	rm -rf build-output
+	docker rm -f $(CONTAINER_NAME) 2>/dev/null || true
+
+help:
+	@echo "Docker-based cross-compilation for MIPSEL-24k"
+	@echo ""
+	@echo "This Makefile uses Docker to avoid manual toolchain setup"
+	@echo ""
+	@echo "Available targets:"
+	@echo "  all          - Build using Docker (default)"
+	@echo "  docker-build - Build binaries in Docker container"
+	@echo "  docker-shell - Open shell in Docker container"
+	@echo "  clean-docker - Remove Docker artifacts"
+	@echo "  help         - Show this help"
+	@echo ""
+	@echo "Usage:"
+	@echo "  make -f Makefile.docker"
+	@echo ""
+	@echo "Output binaries will be in ./build-output/"
