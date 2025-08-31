@@ -40,6 +40,7 @@ docker run --rm -v $(pwd):/workspace -w /workspace alpine:latest sh -c '
 #include <errno.h>
 
 void http_cleanup(void) {}
+
 void http_response_init(struct http_response *response) {
     response->data = NULL;
     response->size = 0;
@@ -63,7 +64,7 @@ struct http_header *http_header_add(struct http_header *headers, const char *nam
     return new_header;
 }
 
-void http_header_free(struct http_header *headers) {
+void http_headers_free(struct http_header *headers) {
     while (headers) {
         struct http_header *next = headers->next;
         free(headers->name);
@@ -73,8 +74,12 @@ void http_header_free(struct http_header *headers) {
     }
 }
 
-int http_request(const char *method, const char *url, struct http_header *headers,
-                 const char *body, struct http_response *response) {
+// Correct signature matching socket_http.h
+int http_request(const char *url,
+                 http_method_t method,
+                 const char *body,
+                 struct http_header *headers,
+                 struct http_response *response) {
     // Simplified HTTP-only implementation
     response->success = false;
     response->status_code = 501; // Not implemented
