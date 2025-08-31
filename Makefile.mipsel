@@ -18,8 +18,9 @@ OBJCOPY = $(CROSS_COMPILE)objcopy
 # Target architecture flags
 # -march=24kc: MIPS 24Kc processor
 # -mtune=24kc: Optimize for 24Kc
-# -msoft-float: Use software floating point (common in routers)
-ARCH_FLAGS = -march=24kc -mtune=24kc -msoft-float
+# Note: Removed -msoft-float as it requires special libraries on Debian
+# Most modern MIPSEL routers support hardware float
+ARCH_FLAGS = -march=24kc -mtune=24kc
 
 # Compilation flags
 CFLAGS = -Wall -Wextra -std=c99 -Os $(ARCH_FLAGS) \
