@@ -1,0 +1,70 @@
+# Dockerfile for MIPSEL cross-compilation with all dependencies
+FROM debian:bullseye
+
+# Install build essentials and MIPSEL toolchain
+RUN apt-get update && apt-get install -y \
+    gcc-mipsel-linux-gnu \
+    g++-mipsel-linux-gnu \
+    libc6-dev-mipsel-cross \
+    build-essential \
+    curl \
+    wget \
+    tar \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build OpenSSL for MIPSEL
+WORKDIR /tmp
+RUN wget https://www.openssl.org/source/openssl-1.1.1w.tar.gz && \
+    tar xzf openssl-1.1.1w.tar.gz && \
+    cd openssl-1.1.1w && \
+    ./Configure linux-mips32 \
+        --cross-compile-prefix=mipsel-linux-gnu- \
+        --prefix=/usr/mipsel \
+        no-shared \
+        no-async \
+        && \
+    make -j$(nproc) && \
+    make install_sw && \
+    cd .. && \
+    rm -rf openssl-*
+
+# Set up work directory
+WORKDIR /build
+
+# Copy source files
+COPY . /build/
+
+# Create Makefile for container build
+RUN cat > Makefile.container << 'EOF'
+CC = mipsel-linux-gnu-gcc
+STRIP = mipsel-linux-gnu-strip
+CFLAGS = -Wall -Wextra -std=c99 -Os -march=mips32r2 \
+         -I/usr/mipsel/include \
+         -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L
+LDFLAGS = -L/usr/mipsel/lib -static
+LIBS = -lssl -lcrypto -lpthread -ldl
+
+LIBDIR = lib
+LIB_SOURCES = $(LIBDIR)/json.c $(LIBDIR)/cloudflare_utils.c \
+              $(LIBDIR)/socket_http.c $(LIBDIR)/publicip.c \
+              $(LIBDIR)/getip.c $(LIBDIR)/setip.c
+
+all: cloudflare_renew tools/getip tools/setip tools/publicip
+	$(STRIP) cloudflare_renew tools/getip tools/setip tools/publicip
+
+cloudflare_renew: cloudflare_renew.c $(LIB_SOURCES)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+
+tools/getip: tools/getip.c $(LIB_SOURCES)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+
+tools/setip: tools/setip.c $(LIB_SOURCES)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+
+tools/publicip: tools/publicip.c $(LIB_SOURCES)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+EOF
+
+# Build command
+CMD ["make", "-f", "Makefile.container"]
