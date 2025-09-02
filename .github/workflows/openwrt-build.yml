@@ -109,8 +109,7 @@ jobs:
         
         RUN cp /build/source/Makefile.openwrt openwrt-sdk/package/cloudflare-renew/Makefile
         
-        RUN cd openwrt-sdk
-        RUN cd scripts && ./feeds update cloudflare-renew && cd ..
+        RUN cd openwrt-sdk && ls && cd scripts && ./feeds update cloudflare-renew && cd ..
         RUN make package/cloudflare-renew/compile
         
         # Create tarball
