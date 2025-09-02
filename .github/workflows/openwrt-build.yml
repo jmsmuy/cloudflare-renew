@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [x86_64ramips]
+        target: [ramips]
         subtarget: [mt7621]
         sdk_version: [24.10.2]
         gcc_version: [13.3.0]
