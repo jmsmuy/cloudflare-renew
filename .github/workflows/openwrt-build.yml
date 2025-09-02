@@ -107,7 +107,9 @@ jobs:
         RUN cp /build/source/.config openwrt-sdk/.config
         RUN cp /build/source/Makefile.openwrt.inner openwrt-sdk/package/cloudflare-renew/src/Makefile
         RUN cp /build/source/Makefile.openwrt openwrt-sdk/package/cloudflare-renew/Makefile
-        
+
+        RUN ./openwrt-sdk/scripts/feeds update -a
+        RUN ./openwrt-sdk/scripts/feeds install -a
         RUN ./openwrt-sdk/scripts/feeds update cloudflare-renew
         RUN ./openwrt-sdk/scripts/feeds install -a -p cloudflare-renew
         RUN cp /build/source/.config openwrt-sdk/.config
