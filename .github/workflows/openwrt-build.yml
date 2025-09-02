@@ -93,7 +93,7 @@ jobs:
         RUN mkdir -p openwrt-sdk/package/cloudflare-renew/src/tools
         RUN mkdir -p openwrt-sdk/package/cloudflare-renew/src/tests
 
-        RUN cp /build/source/cloudflare_renew.c /build/source/Makefile openwrt-sdk/package/cloudflare-renew/src/
+        RUN cp /build/source/cloudflare_renew.c /build/source/Makefile.openwrt.inner openwrt-sdk/package/cloudflare-renew/src/
         RUN cp /build/source/lib/json.c /build/source/lib/json.h openwrt-sdk/package/cloudflare-renew/src/lib/
         RUN cp /build/source/lib/cloudflare_utils.c /build/source/lib/cloudflare_utils.h openwrt-sdk/package/cloudflare-renew/src/lib/
         RUN cp /build/source/lib/socket_http.c /build/source/lib/socket_http.h openwrt-sdk/package/cloudflare-renew/src/lib/
