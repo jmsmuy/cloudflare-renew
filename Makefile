@@ -13,7 +13,7 @@ LIB_SOURCES=$(LIBDIR)/json.c $(LIBDIR)/cloudflare_utils.c $(LIBDIR)/socket_http.
 LIB_HEADERS=$(LIBDIR)/json.h $(LIBDIR)/cloudflare_utils.h $(LIBDIR)/socket_http.h $(LIBDIR)/publicip.h $(LIBDIR)/getip.h $(LIBDIR)/setip.h
 
 # Main programs
-PROGRAMS=tools/getip tools/setip tools/publicip cloudflare_renew
+PROGRAMS=tools/getip tools/setip tools/publicip cloudflare-renew
 
 # Test programs
 TESTS=test_json_comprehensive test_recursive_search test_serialization test_roundtrip_simple
@@ -36,7 +36,7 @@ tools/setip: tools/setip.c $(LIB_SOURCES) $(LIB_HEADERS)
 tools/publicip: tools/publicip.c $(LIB_SOURCES) $(LIB_HEADERS)
 	$(CC) $(CFLAGS) -o $@ tools/publicip.c $(LIB_SOURCES) $(LIBS)
 
-cloudflare_renew: cloudflare_renew.c $(LIB_SOURCES) $(LIB_HEADERS)
+cloudflare-renew: cloudflare_renew.c $(LIB_SOURCES) $(LIB_HEADERS)
 	$(CC) $(CFLAGS) -o $@ cloudflare_renew.c $(LIB_SOURCES) $(LIBS)
 
 # Build tests

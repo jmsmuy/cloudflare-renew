@@ -68,57 +68,44 @@ jobs:
         RUN tar -xf openwrt-sdk.tar.zst && \
             mv openwrt-sdk-* openwrt-sdk
         
-        # Set environment variables
-        ENV STAGING_DIR=/build/openwrt-sdk/staging_dir
-        ENV TOOLCHAIN_DIR=/build/openwrt-sdk/staging_dir/toolchain-${{ matrix.target }}_gcc-${{ matrix.gcc_version }}_musl
-        ENV PATH=$TOOLCHAIN_DIR/bin:$PATH
-        
-        # Copy source code
-        COPY . /build/source
-        
-        # Build the project
-        WORKDIR /build/source
-        
-        # Set environment variables for the build
-        ENV TARGET=${{ matrix.target }}
-        ENV TOOLCHAIN_DIR=/build/openwrt-sdk/staging_dir/toolchain-${{ matrix.target }}_gcc-${{ matrix.gcc_version }}_musl
-        ENV CC=$(TOOLCHAIN_DIR)/bin/${{ matrix.target }}-openwrt-linux-musl-gcc
-        ENV CFLAGS="-Wall -Wextra -std=c99 -O2 -s"
-        ENV LIBS="-lcurl"
-        
-        # Build using OpenWrt toolchain
-        RUN make -f Makefile.openwrt clean
-        RUN make -f Makefile.openwrt all
-        
-        # Verify binaries
-        RUN file tools/getip tools/setip tools/publicip cloudflare_renew
-        
         # Create package
-        RUN mkdir -p /build/package
-        RUN cp tools/getip tools/setip tools/publicip cloudflare_renew /build/package/
-        RUN cp cloudflare.conf.sample /build/package/
-        RUN cp README.md LICENSE /build/package/
-        RUN cp getip-all.sh setip-all.sh /build/package/
+        RUN mkdir -p openwrt-sdk/package
+        RUN mkdir -p openwrt-sdk/package/cloudflare-renew
+        RUN mkdir -p openwrt-sdk/package/cloudflare-renew/src
+        RUN mkdir -p openwrt-sdk/package/cloudflare-renew/src/lib
+        RUN mkdir -p openwrt-sdk/package/cloudflare-renew/src/tools
+        RUN mkdir -p openwrt-sdk/package/cloudflare-renew/src/tests
+
+        RUN cp cloudflare_renew.c Makefile openwrt-sdk/package/cloudflare-renew/src/
+        RUN cp lib/json.c lib/json.h openwrt-sdk/package/cloudflare-renew/src/lib/
+        RUN cp lib/cloudflare_utils.c lib/cloudflare_utils.h openwrt-sdk/package/cloudflare-renew/src/lib/
+        RUN cp lib/socket_http.c lib/socket_http.h openwrt-sdk/package/cloudflare-renew/src/lib/
+        RUN cp lib/publicip.c lib/publicip.h openwrt-sdk/package/cloudflare-renew/src/lib/
+        RUN cp lib/getip.c lib/getip.h openwrt-sdk/package/cloudflare-renew/src/lib/
+        RUN cp lib/setip.c lib/setip.h openwrt-sdk/package/cloudflare-renew/src/lib/
+        RUN cp lib/http_utils.c lib/http_utils.h openwrt-sdk/package/cloudflare-renew/src/lib/
+        RUN cp tools/getip.c openwrt-sdk/package/cloudflare-renew/src/tools/
+        RUN cp tools/setip.c openwrt-sdk/package/cloudflare-renew/src/tools/
+        RUN cp tools/publicip.c openwrt-sdk/package/cloudflare-renew/src/tools/
         
-        # Copy install script
-        RUN cp install-openwrt.sh /build/package/install.sh
+        RUN cp Makefile.openwrt openwrt-sdk/package/cloudflare-renew/Makefile
         
-        RUN chmod +x /build/package/install.sh
+        RUN cd openwrt-sdk && make V=99
         
-        # Create tarball
-        RUN cd /build && tar -czf cloudflare-renew-openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}.tar.gz package/
+        # # Create tarball
+        # RUN cd /build && tar -czf cloudflare-renew-openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}.tar.gz package/
         
-        # Copy result to host
-        RUN cp /build/cloudflare-renew-openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}.tar.gz /build/source/build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/
-        EOF
+        # # Copy result to host
+        # RUN cp /build/cloudflare-renew-openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}.tar.gz /build/source/build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/
+        # EOF
         
         # Build Docker image and run build
-        docker build -f Dockerfile.openwrt -t openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }} .
+        # docker build -f Dockerfile.openwrt -t openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }} .
         
         # Clean up Docker image
-        docker rmi openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }}
+        # docker rmi openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }}
         
-        echo "✅ Build completed for ${{ matrix.target }} on ${{ matrix.sdk_version }}"
+        echo "✅ Build completed for ${{ matrix.target }}-${{ matrix.subtarget }} on ${{ matrix.sdk_version }}"
         
     - name: Upload OpenWrt binaries
       uses: actions/upload-artifact@v4
