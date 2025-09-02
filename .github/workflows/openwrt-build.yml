@@ -68,6 +68,7 @@ jobs:
             python3-distutils \
             python3-pip \
             file \
+            swig \
             && rm -rf /var/lib/apt/lists/*
         
         # Set working directory
