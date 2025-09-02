@@ -60,12 +60,12 @@ jobs:
         WORKDIR /build
         
         # Download and extract OpenWrt SDK
-        RUN wget -O openwrt-sdk.tar.xz \
-            "https://downloads.openwrt.org/releases/${{ matrix.sdk_version }}/targets/${{ matrix.target }}/${{ matrix.subtarget }}/openwrt-sdk-${{ matrix.sdk_version }}-${{ matrix.target }}-${{ matrix.subtarget }}_gcc-${{ matrix.gcc_version }}_musl.Linux-x86_64.tar.xz" \
+        RUN wget -O openwrt-sdk.tar.zst \
+            "https://downloads.openwrt.org/releases/${{ matrix.sdk_version }}/targets/${{ matrix.target }}/${{ matrix.subtarget }}/openwrt-sdk-${{ matrix.sdk_version }}-${{ matrix.target }}-${{ matrix.subtarget }}_gcc-${{ matrix.gcc_version }}_musl.Linux-x86_64.tar.zst" \
             || echo "Failed to download SDK for ${{ matrix.target }}/{{ matrix.subtarget }} on ${{ matrix.sdk_version }}"
         
         # Extract SDK
-        RUN tar -xf openwrt-sdk.tar.xz && \
+        RUN tar -xf openwrt-sdk.tar.zst && \
             mv openwrt-sdk-* openwrt-sdk
         
         # Set environment variables
