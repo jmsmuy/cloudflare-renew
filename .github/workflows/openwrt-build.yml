@@ -56,7 +56,6 @@ jobs:
         # Build Docker image using the dedicated Dockerfile
         docker build \
             --build-arg SDK_URL="https://downloads.openwrt.org/releases/${{ matrix.sdk_version }}/targets/${{ matrix.target }}/${{ matrix.subtarget }}/openwrt-sdk-${{ matrix.sdk_version }}-${{ matrix.target }}-${{ matrix.subtarget }}_gcc-${{ matrix.gcc_version }}_musl.Linux-x86_64.tar.zst" \
-            --build-arg BUILD_DIR="openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}" \
             -f Dockerfile.openwrt \
             -t openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }} .
         
