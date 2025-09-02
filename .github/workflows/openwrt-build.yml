@@ -52,19 +52,6 @@ jobs:
             -f Dockerfile.openwrt \
             -t openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }} .
         
-
-        
-
-        
-
-
-
-
-
-        
-        # Build Docker image and run build
-        docker build -t openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }} .
-        
         # Clean up Docker image
         docker rmi openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }}
         
