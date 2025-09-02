@@ -104,6 +104,7 @@ jobs:
         RUN cp /build/source/tools/getip.c openwrt-sdk/package/cloudflare-renew/src/tools/
         RUN cp /build/source/tools/setip.c openwrt-sdk/package/cloudflare-renew/src/tools/
         RUN cp /build/source/tools/publicip.c openwrt-sdk/package/cloudflare-renew/src/tools/
+        RUN cp /build/source/.config openwrt-sdk/.config
         
         RUN cp /build/source/Makefile.openwrt openwrt-sdk/package/cloudflare-renew/Makefile
         
