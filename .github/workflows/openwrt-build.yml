@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       target:
-        description: 'OpenWrt target architecture (e.g., x86_64, arm_cortex-a9, mipsel_24kc)'
+        description: 'OpenWrt target architecture (e.g., x86_64, arm_cortex-a9, ramips/mk7621)'
         required: false
         default: 'x86_64'
       sdk_version:
@@ -23,8 +23,10 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [x86_64, arm_cortex-a9, mipsel_24kc, aarch64_generic]
+        target: [x86_64ramips]
+        subtarget: [mt7621]
         sdk_version: [24.10.2]
+        gcc_version: [13.3.0]
     
     steps:
     - name: Checkout code
@@ -58,8 +60,8 @@ jobs:
         
         # Download and extract OpenWrt SDK
         RUN wget -O openwrt-sdk.tar.xz \
-            "https://downloads.openwrt.org/releases/${{ matrix.sdk_version }}/targets/${{ matrix.target }}/openwrt-sdk-${{ matrix.sdk_version }}-${{ matrix.target }}-gcc-12.3.0_musl.Linux-x86_64.tar.xz" \
-            || echo "Failed to download SDK for ${{ matrix.target }} on ${{ matrix.sdk_version }}"
+            "https://downloads.openwrt.org/releases/${{ matrix.sdk_version }}/targets/${{ matrix.target }}/${{ matrix.subtarget }}/openwrt-sdk-${{ matrix.sdk_version }}-${{ matrix.target }}-${{ matrix.subtarget }}-gcc-${{ matrix.gcc_version }}_musl.Linux-x86_64.tar.xz" \
+            || echo "Failed to download SDK for ${{ matrix.target }}/{{ matrix.subtarget }} on ${{ matrix.sdk_version }}"
         
         # Extract SDK
         RUN tar -xf openwrt-sdk.tar.xz && \
@@ -67,7 +69,7 @@ jobs:
         
         # Set environment variables
         ENV STAGING_DIR=/build/openwrt-sdk/staging_dir
-        ENV TOOLCHAIN_DIR=/build/openwrt-sdk/staging_dir/toolchain-${{ matrix.target }}_gcc-12.3.0_musl
+        ENV TOOLCHAIN_DIR=/build/openwrt-sdk/staging_dir/toolchain-${{ matrix.target }}_gcc-${{ matrix.gcc_version }}_musl
         ENV PATH=$TOOLCHAIN_DIR/bin:$PATH
         
         # Copy source code
@@ -76,35 +78,12 @@ jobs:
         # Build the project
         WORKDIR /build/source
         
-        # Create Makefile for OpenWrt
-        RUN cat > Makefile.openwrt << 'MAKEFILE_EOF'
-        # OpenWrt-specific Makefile
-        CC=$(TOOLCHAIN_DIR)/bin/${{ matrix.target }}-openwrt-linux-musl-gcc
-        CFLAGS=-Wall -Wextra -std=c99 -O2 -s
-        LIBS=-lcurl
-        LIBDIR=lib
-        PROGRAMS=tools/getip tools/setip tools/publicip cloudflare_renew
-        
-        LIB_SOURCES=$(LIBDIR)/json.c $(LIBDIR)/cloudflare_utils.c $(LIBDIR)/http_utils.c $(LIBDIR)/publicip.c $(LIBDIR)/getip.c $(LIBDIR)/setip.c
-        LIB_HEADERS=$(LIBDIR)/json.h $(LIBDIR)/cloudflare_utils.h $(LIBDIR)/http_utils.h $(LIBDIR)/publicip.h $(LIBDIR)/getip.h $(LIBDIR)/setip.h
-        
-        all: $(PROGRAMS)
-        
-        tools/getip: tools/getip.c $(LIB_SOURCES) $(LIB_HEADERS)
-        	$(CC) $(CFLAGS) -o $@ tools/getip.c $(LIB_SOURCES) $(LIBS)
-        
-        tools/setip: tools/setip.c $(LIB_SOURCES) $(LIB_HEADERS)
-        	$(CC) $(CFLAGS) -o $@ tools/setip.c $(LIB_SOURCES) $(LIBS)
-        
-        tools/publicip: tools/publicip.c $(LIB_SOURCES) $(LIB_HEADERS)
-        	$(CC) $(CFLAGS) -o $@ tools/publicip.c $(LIB_SOURCES) $(LIBS)
-        
-        cloudflare_renew: cloudflare_renew.c $(LIB_SOURCES) $(LIB_HEADERS)
-        	$(CC) $(CFLAGS) -o $@ cloudflare_renew.c $(LIB_SOURCES) $(LIBS)
-        
-        clean:
-        	rm -f $(PROGRAMS)
-        MAKEFILE_EOF
+        # Set environment variables for the build
+        ENV TARGET=${{ matrix.target }}
+        ENV TOOLCHAIN_DIR=/build/openwrt-sdk/staging_dir/toolchain-${{ matrix.target }}_gcc-${{ matrix.gcc_version }}_musl
+        ENV CC=$(TOOLCHAIN_DIR)/bin/${{ matrix.target }}-openwrt-linux-musl-gcc
+        ENV CFLAGS="-Wall -Wextra -std=c99 -O2 -s"
+        ENV LIBS="-lcurl"
         
         # Build using OpenWrt toolchain
         RUN make -f Makefile.openwrt clean

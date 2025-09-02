@@ -1,0 +1,31 @@
+# OpenWrt-specific Makefile
+# This Makefile is designed for cross-compilation with OpenWrt toolchains
+
+# These will be overridden by the workflow with actual paths
+CC ?= $(TOOLCHAIN_DIR)/bin/$(TARGET)-openwrt-linux-musl-gcc
+CFLAGS ?= -Wall -Wextra -std=c99 -O2 -s
+LIBS ?= -lcurl
+LIBDIR = lib
+PROGRAMS = tools/getip tools/setip tools/publicip cloudflare_renew
+
+LIB_SOURCES = $(LIBDIR)/json.c $(LIBDIR)/cloudflare_utils.c $(LIBDIR)/http_utils.c $(LIBDIR)/publicip.c $(LIBDIR)/getip.c $(LIBDIR)/setip.c
+LIB_HEADERS = $(LIBDIR)/json.h $(LIBDIR)/cloudflare_utils.h $(LIBDIR)/http_utils.h $(LIBDIR)/publicip.h $(LIBDIR)/getip.h $(LIBDIR)/setip.h
+
+.PHONY: all clean
+
+all: $(PROGRAMS)
+
+tools/getip: tools/getip.c $(LIB_SOURCES) $(LIB_HEADERS)
+	$(CC) $(CFLAGS) -o $@ tools/getip.c $(LIB_SOURCES) $(LIBS)
+
+tools/setip: tools/setip.c $(LIB_SOURCES) $(LIB_HEADERS)
+	$(CC) $(CFLAGS) -o $@ tools/setip.c $(LIB_SOURCES) $(LIBS)
+
+tools/publicip: tools/publicip.c $(LIB_SOURCES) $(LIB_HEADERS)
+	$(CC) $(CFLAGS) -o $@ tools/publicip.c $(LIB_SOURCES) $(LIBS)
+
+cloudflare_renew: cloudflare_renew.c $(LIB_SOURCES) $(LIB_HEADERS)
+	$(CC) $(CFLAGS) -o $@ cloudflare_renew.c $(LIB_SOURCES) $(LIBS)
+
+clean:
+	rm -f $(PROGRAMS)

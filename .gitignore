@@ -42,7 +42,6 @@ openssl-*
 .clang-tidy-cache/
 compile_commands.json
 *.plist
-
 # OS files
 .DS_Store
 Thumbs.db
