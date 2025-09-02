@@ -94,7 +94,6 @@ jobs:
         RUN mkdir -p openwrt-sdk/package/cloudflare-renew/src/tests
 
         RUN cp /build/source/cloudflare_renew.c openwrt-sdk/package/cloudflare-renew/src/
-        RUN cp /build/source/Makefile.openwrt.inner openwrt-sdk/package/cloudflare-renew/src/Makefile
         RUN cp /build/source/lib/json.c /build/source/lib/json.h openwrt-sdk/package/cloudflare-renew/src/lib/
         RUN cp /build/source/lib/cloudflare_utils.c /build/source/lib/cloudflare_utils.h openwrt-sdk/package/cloudflare-renew/src/lib/
         RUN cp /build/source/lib/socket_http.c /build/source/lib/socket_http.h openwrt-sdk/package/cloudflare-renew/src/lib/
@@ -106,11 +105,12 @@ jobs:
         RUN cp /build/source/tools/setip.c openwrt-sdk/package/cloudflare-renew/src/tools/
         RUN cp /build/source/tools/publicip.c openwrt-sdk/package/cloudflare-renew/src/tools/
         RUN cp /build/source/.config openwrt-sdk/.config
-        
+        RUN cp /build/source/Makefile.openwrt.inner openwrt-sdk/package/cloudflare-renew/src/Makefile
         RUN cp /build/source/Makefile.openwrt openwrt-sdk/package/cloudflare-renew/Makefile
         
-        RUN cd openwrt-sdk && cd scripts && ./feeds update cloudflare-renew && cd ..
+        RUN ./openwrt-sdk/scripts/feeds update cloudflare-renew
         RUN ./openwrt-sdk/scripts/feeds install -a -p cloudflare-renew
+        RUN cp /build/source/.config openwrt-sdk/.config
         RUN cd openwrt-sdk && make package/cloudflare-renew/compile V=s
         
         # Create tarball
