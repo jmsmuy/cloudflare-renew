@@ -74,5 +74,6 @@ RUN find openwrt-sdk/bin/packages -name "cloudflare-renew*.ipk" -exec cp {} /bui
 # Create tarball with the compiled package
 RUN cd /build && tar -czf cloudflare-renew-openwrt-package.tar.gz *.ipk
 
-# Copy result to host
-RUN cp /build/cloudflare-renew-openwrt-package.tar.gz /build/source/build/
+# Copy result to host in the correct location for workflow upload
+ARG BUILD_DIR
+RUN cp /build/cloudflare-renew-openwrt-package.tar.gz /build/source/build/${BUILD_DIR}/
