@@ -92,6 +92,17 @@ make check-format   # Check if code is properly formatted
 make lint           # Run all linters (cppcheck, clang-tidy)
 ```
 
+### OpenWrt Builds
+The project includes automated OpenWrt builds via GitHub Actions for x86_64 and mipsel_24k architectures
+
+#### Build Artifacts
+Each build produces:
+- Cross-compiled binaries for the target architecture
+- Configuration templates and documentation
+- Installation script for OpenWrt devices
+- Compressed package ready for deployment
+```
+
 ## Usage
 
 ### Automatic Renewal (Recommended)
@@ -194,6 +205,15 @@ Each release includes:
 - Configuration templates (`cloudflare.conf.sample`)
 - Setup script (`install.sh`) for quick deployment
 - Complete documentation and license files
+
+### 🏗️ **OpenWrt Build Pipeline** (Main Branch)
+- **Triggers**: On pushes to `main` branch or manual dispatch
+- **Actions**:
+  - Cross-compilation for multiple OpenWrt targets
+  - Support for OpenWrt 22.03.5 and 23.05.0
+  - Architecture targets: x86_64, ARM, MIPS, AArch64
+  - Automated binary packaging and artifact uploads
+  - Integration with release workflow for distribution
 
 ## Security
 
