@@ -92,18 +92,18 @@ jobs:
         
         RUN cd openwrt-sdk && make V=99
         
-        # # Create tarball
-        # RUN cd /build && tar -czf cloudflare-renew-openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}.tar.gz package/
+        # Create tarball
+        RUN cd /build && tar -czf cloudflare-renew-openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}.tar.gz package/
         
-        # # Copy result to host
-        # RUN cp /build/cloudflare-renew-openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}.tar.gz /build/source/build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/
-        # EOF
+        # Copy result to host
+        RUN cp /build/cloudflare-renew-openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}.tar.gz /build/source/build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/
+        EOF
         
         # Build Docker image and run build
-        # docker build -f Dockerfile.openwrt -t openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }} .
+        docker build -f Dockerfile.openwrt -t openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }} .
         
         # Clean up Docker image
-        # docker rmi openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }}
+        docker rmi openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }}
         
         echo "✅ Build completed for ${{ matrix.target }}-${{ matrix.subtarget }} on ${{ matrix.sdk_version }}"
         
