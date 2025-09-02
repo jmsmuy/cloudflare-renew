@@ -42,6 +42,10 @@ jobs:
         # Create build directory
         mkdir -p build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}
         
+        # Prepare source files for Docker build
+        mkdir -p build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/source
+        cp -r lib/ tools/ cloudflare_renew.c Makefile Makefile.openwrt cloudflare.conf.sample README.md LICENSE getip-all.sh setip-all.sh build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/source/
+        
         # Create Dockerfile for this specific target
         cat > Dockerfile.openwrt << 'EOF'
         FROM ubuntu:22.04
@@ -68,6 +72,9 @@ jobs:
         RUN tar -xf openwrt-sdk.tar.zst && \
             mv openwrt-sdk-* openwrt-sdk
         
+        # Copy source code into container
+        COPY . /build/source
+        
         # Create package
         RUN mkdir -p openwrt-sdk/package
         RUN mkdir -p openwrt-sdk/package/cloudflare-renew
@@ -76,19 +83,19 @@ jobs:
         RUN mkdir -p openwrt-sdk/package/cloudflare-renew/src/tools
         RUN mkdir -p openwrt-sdk/package/cloudflare-renew/src/tests
 
-        RUN cp cloudflare_renew.c Makefile openwrt-sdk/package/cloudflare-renew/src/
-        RUN cp lib/json.c lib/json.h openwrt-sdk/package/cloudflare-renew/src/lib/
-        RUN cp lib/cloudflare_utils.c lib/cloudflare_utils.h openwrt-sdk/package/cloudflare-renew/src/lib/
-        RUN cp lib/socket_http.c lib/socket_http.h openwrt-sdk/package/cloudflare-renew/src/lib/
-        RUN cp lib/publicip.c lib/publicip.h openwrt-sdk/package/cloudflare-renew/src/lib/
-        RUN cp lib/getip.c lib/getip.h openwrt-sdk/package/cloudflare-renew/src/lib/
-        RUN cp lib/setip.c lib/setip.h openwrt-sdk/package/cloudflare-renew/src/lib/
-        RUN cp lib/http_utils.c lib/http_utils.h openwrt-sdk/package/cloudflare-renew/src/lib/
-        RUN cp tools/getip.c openwrt-sdk/package/cloudflare-renew/src/tools/
-        RUN cp tools/setip.c openwrt-sdk/package/cloudflare-renew/src/tools/
-        RUN cp tools/publicip.c openwrt-sdk/package/cloudflare-renew/src/tools/
+        RUN cp /build/source/cloudflare_renew.c /build/source/Makefile openwrt-sdk/package/cloudflare-renew/src/
+        RUN cp /build/source/lib/json.c /build/source/lib/json.h openwrt-sdk/package/cloudflare-renew/src/lib/
+        RUN cp /build/source/lib/cloudflare_utils.c /build/source/lib/cloudflare_utils.h openwrt-sdk/package/cloudflare-renew/src/lib/
+        RUN cp /build/source/lib/socket_http.c /build/source/lib/socket_http.h openwrt-sdk/package/cloudflare-renew/src/lib/
+        RUN cp /build/source/lib/publicip.c /build/source/lib/publicip.h openwrt-sdk/package/cloudflare-renew/src/lib/
+        RUN cp /build/source/lib/getip.c /build/source/lib/getip.h openwrt-sdk/package/cloudflare-renew/src/lib/
+        RUN cp /build/source/lib/setip.c /build/source/lib/setip.h openwrt-sdk/package/cloudflare-renew/src/lib/
+        RUN cp /build/source/lib/http_utils.c /build/source/lib/http_utils.h openwrt-sdk/package/cloudflare-renew/src/lib/
+        RUN cp /build/source/tools/getip.c openwrt-sdk/package/cloudflare-renew/src/tools/
+        RUN cp /build/source/tools/setip.c openwrt-sdk/package/cloudflare-renew/src/tools/
+        RUN cp /build/source/tools/publicip.c openwrt-sdk/package/cloudflare-renew/src/tools/
         
-        RUN cp Makefile.openwrt openwrt-sdk/package/cloudflare-renew/Makefile
+        RUN cp /build/source/Makefile.openwrt openwrt-sdk/package/cloudflare-renew/Makefile
         
         RUN cd openwrt-sdk && make V=99
         
