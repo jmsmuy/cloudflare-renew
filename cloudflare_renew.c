@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 #include "lib/getip.h"
 #include "lib/publicip.h"
 #include "lib/setip.h"
@@ -15,7 +16,7 @@
 #define LOG_FILE "cloudflare.log"
 
 // Function to write log messages with timestamp
-void write_log(const char *message)
+static void write_log(const char *message)
 {
     FILE *log = fopen(LOG_FILE, "a");
     if (!log) {
@@ -25,6 +26,7 @@ void write_log(const char *message)
 
     time_t now = time(NULL);
     char *timestamp = ctime(&now);
+    // Note: ctime is used here for simplicity in single-threaded context
     // Remove newline from ctime
     timestamp[strlen(timestamp) - 1] = '\0';
 
@@ -33,7 +35,7 @@ void write_log(const char *message)
 }
 
 // Function to read IP from file
-char *read_ip_from_file(const char *filename)
+static char *read_ip_from_file(const char *filename)
 {
     FILE *file = fopen(filename, "r");
     if (!file) {
@@ -62,7 +64,7 @@ char *read_ip_from_file(const char *filename)
 }
 
 // Function to write IP to file
-int write_ip_to_file(const char *filename, const char *ip)
+static int write_ip_to_file(const char *filename, const char *ip)
 {
     FILE *file = fopen(filename, "w");
     if (!file) {
@@ -75,7 +77,7 @@ int write_ip_to_file(const char *filename, const char *ip)
 }
 
 // Function to get all domain names from config
-char **get_all_domains(int *count)
+static char **get_all_domains(int *count)
 {
     FILE *file = fopen(CONFIG_FILE, "r");
     if (!file) {
@@ -103,7 +105,13 @@ char **get_all_domains(int *count)
                 }
 
                 if (strlen(domain) > 0) {
-                    domains = realloc(domains, (*count + 1) * sizeof(char *));
+                    char **new_domains = (char **) realloc((void *) domains, (*count + 1) * sizeof(char *));
+                    if (!new_domains) {
+                        free((void *) domains);
+                        fclose(file);
+                        return NULL;
+                    }
+                    domains = new_domains;
                     domains[*count] = strdup(domain);
                     (*count)++;
                 }
@@ -223,7 +231,7 @@ int main(void)
         for (int i = 0; i < domain_count; i++) {
             free(domains[i]);
         }
-        free(domains);
+        free((void *) domains);
 
         // Step 5: Update last.ip file
         if (write_ip_to_file(LAST_IP_FILE, public_ip) == 0) {

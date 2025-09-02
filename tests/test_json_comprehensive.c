@@ -6,7 +6,7 @@
 #include <string.h>
 
 // Helper function to count array elements
-int count_array_elements(struct json_array *head)
+static int count_array_elements(struct json_array *head)
 {
     int count = 0;
     struct json_array *current = head;
@@ -18,7 +18,7 @@ int count_array_elements(struct json_array *head)
 }
 
 // Test function to extract and validate all fields
-void test_cloudflare_response_fields(struct json_root *root, const char *original_json)
+static void test_cloudflare_response_fields(struct json_root *root, const char *original_json)
 {
     printf("Testing all fields in Cloudflare response:\n");
     printf("==========================================\n");

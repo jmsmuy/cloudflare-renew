@@ -1,10 +1,9 @@
 #include "setip.h"
 
 #include "cloudflare_utils.h"
-#include "http_utils.h"
 #include "json.h"
+#include "socket_http.h"
 
-#include <curl/curl.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,7 +41,7 @@ int set_cloudflare_ip(const char *config_file, const char *token_file, const cha
     }
 
     // Determine which entry to use
-    cloudflare_entry_t *entry = NULL;
+    const cloudflare_entry_t *entry = NULL;
     if (domain_name) {
         entry = find_entry_by_domain(config, domain_name);
     } else {
@@ -68,73 +67,60 @@ int set_cloudflare_ip(const char *config_file, const char *token_file, const cha
         return 1;
     }
 
-    CURL *curl;
-    CURLcode res;
     struct http_response response;
     int result = 1; // Default to failure
 
     http_response_init(&response);
-    curl_global_init(CURL_GLOBAL_DEFAULT);
-    curl = curl_easy_init();
 
-    if (curl) {
-        struct curl_slist *headers = NULL;
-        char auth_header[512];
-        snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", config->cloudflare_token);
-        headers = curl_slist_append(headers, auth_header);
-        headers = curl_slist_append(headers, "Content-Type: application/json");
+    // Build headers
+    struct http_header *headers = NULL;
+    char auth_header[512];
+    snprintf(auth_header, sizeof(auth_header), "Bearer %s", config->cloudflare_token);
+    headers = http_header_add(headers, "Authorization", auth_header);
+    headers = http_header_add(headers, "Content-Type", "application/json");
 
-        char url[1024];
-        build_cloudflare_dns_url(url, sizeof(url), entry->zone_id, entry->dns_record_id, NULL, NULL);
+    char url[1024];
+    build_cloudflare_dns_url(url, sizeof(url), entry->zone_id, entry->dns_record_id, NULL, NULL);
 
-        curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, http_write_callback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *) &response);
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "PUT");
-        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json_string);
+    // Keep HTTPS for Cloudflare API
 
-        res = curl_easy_perform(curl);
-        if (res == CURLE_OK && response.data) {
-            // Parse the response to check if update was successful
-            struct json_root *response_root = parse_json(response.data);
-            if (response_root) {
-                int success_count = 0;
-                bool *success_values = get_boolean_values(response_root, "success", &success_count);
+    int http_result = http_request(url, HTTP_PUT, json_string, headers, &response);
+    if (http_result == 0 && response.success && response.data) {
+        // Parse the response to check if update was successful
+        struct json_root *response_root = parse_json(response.data);
+        if (response_root) {
+            int success_count = 0;
+            bool *success_values = get_boolean_values(response_root, "success", &success_count);
 
-                bool operation_successful = false;
-                if (success_values && success_count > 0) {
-                    operation_successful = success_values[0];
-                    free(success_values);
-                }
-
-                if (operation_successful) {
-                    // Verify the IP was set correctly
-                    int content_count = 0;
-                    char **content_values = get_string_values(response_root, "content", &content_count);
-
-                    if (content_values && content_count > 0) {
-                        if (strcmp(content_values[0], ip_address) == 0) {
-                            result = 0; // Success
-                        }
-
-                        // Free the content values
-                        for (int i = 0; i < content_count; i++) {
-                            free(content_values[i]);
-                        }
-                        free(content_values);
-                    }
-                }
-
-                free(response_root);
+            bool operation_successful = false;
+            if (success_values && success_count > 0) {
+                operation_successful = success_values[0];
+                free(success_values);
             }
-        }
 
-        curl_slist_free_all(headers);
-        curl_easy_cleanup(curl);
+            if (operation_successful) {
+                // Verify the IP was set correctly
+                int content_count = 0;
+                char **content_values = get_string_values(response_root, "content", &content_count);
+
+                if (content_values && content_count > 0) {
+                    if (strcmp(content_values[0], ip_address) == 0) {
+                        result = 0; // Success
+                    }
+
+                    // Free the content values
+                    for (int i = 0; i < content_count; i++) {
+                        free(content_values[i]);
+                    }
+                    free((void *) content_values);
+                }
+            }
+
+            free(response_root);
+        }
     }
 
-    curl_global_cleanup();
+    http_headers_free(headers);
     http_response_free(&response);
     free(json_string);
     free_cloudflare_config(config);

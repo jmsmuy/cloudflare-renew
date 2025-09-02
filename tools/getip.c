@@ -1,5 +1,6 @@
 #include "../lib/getip.h"
 
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -13,14 +14,14 @@ int main(int argc, char *argv[])
     }
 
     const char *domain_name = (argc == 4) ? argv[3] : NULL;
-    char *ip = get_cloudflare_ip(argv[1], argv[2], domain_name);
+    char *ip_address = get_cloudflare_ip(argv[1], argv[2], domain_name);
 
-    if (ip) {
-        printf("%s\n", ip);
-        free(ip);
+    if (ip_address) {
+        printf("%s\n", ip_address);
+        free(ip_address);
         return 0;
-    } else {
-        fprintf(stderr, "Failed to get IP from Cloudflare\n");
-        return 1;
     }
+
+    fprintf(stderr, "Failed to get IP from Cloudflare\n");
+    return 1;
 }

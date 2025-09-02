@@ -1,5 +1,7 @@
+#define _POSIX_C_SOURCE 200809L
 #include <ctype.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,7 +31,7 @@ struct json_root {
 };
 
 // Helper function to skip whitespace
-char *skip_whitespace(char *str)
+static char *skip_whitespace(char *str)
 {
     while (*str && isspace(*str)) {
         str++;
@@ -38,11 +40,12 @@ char *skip_whitespace(char *str)
 }
 
 // Helper function to parse a JSON string value
-char *parse_string(char **json_ptr)
+static char *parse_string(char **json_ptr)
 {
     char *start = *json_ptr;
-    if (*start != '"')
+    if (*start != '"') {
         return NULL;
+    }
     start++; // Skip opening quote
 
     char *end = start;
@@ -54,13 +57,15 @@ char *parse_string(char **json_ptr)
         }
     }
 
-    if (*end != '"')
+    if (*end != '"') {
         return NULL;
+    }
 
     size_t len = end - start;
     char *result = malloc(len + 1);
-    if (!result)
+    if (!result) {
         return NULL;
+    }
 
     strncpy(result, start, len);
     result[len] = '\0';
@@ -70,43 +75,50 @@ char *parse_string(char **json_ptr)
 }
 
 // Helper function to parse a JSON number
-double parse_number(char **json_ptr)
+static double parse_number(char **json_ptr)
 {
     char *start = *json_ptr;
     char *end = start;
 
     // Handle negative numbers
-    if (*end == '-')
+    if (*end == '-') {
         end++;
+    }
 
     // Parse digits
-    while (*end && isdigit(*end))
+    while (*end && isdigit(*end)) {
         end++;
+    }
 
     // Handle decimal point
     if (*end == '.') {
         end++;
-        while (*end && isdigit(*end))
+        while (*end && isdigit(*end)) {
             end++;
+        }
     }
 
     // Handle scientific notation
     if (*end == 'e' || *end == 'E') {
         end++;
-        if (*end == '+' || *end == '-')
+        if (*end == '+' || *end == '-') {
             end++;
-        while (*end && isdigit(*end))
+        }
+        while (*end && isdigit(*end)) {
             end++;
+        }
     }
 
     char *num_str = malloc(end - start + 1);
-    if (!num_str)
+    if (!num_str) {
         return 0.0;
+    }
 
     strncpy(num_str, start, end - start);
     num_str[end - start] = '\0';
 
-    double result = atof(num_str);
+    char *endptr = NULL;
+    double result = strtod(num_str, &endptr);
     free(num_str);
 
     *json_ptr = end;
@@ -114,7 +126,7 @@ double parse_number(char **json_ptr)
 }
 
 // Helper function to parse a JSON boolean or null
-bool parse_boolean_or_null(char **json_ptr, bool *is_null, bool *value)
+static bool parse_boolean_or_null(char **json_ptr, bool *is_null, bool *value)
 {
     char *start = *json_ptr;
 
@@ -123,12 +135,16 @@ bool parse_boolean_or_null(char **json_ptr, bool *is_null, bool *value)
         *value = true;
         *json_ptr = start + 4;
         return true;
-    } else if (strncmp(start, "false", 5) == 0) {
+    }
+
+    if (strncmp(start, "false", 5) == 0) {
         *is_null = false;
         *value = false;
         *json_ptr = start + 5;
         return true;
-    } else if (strncmp(start, "null", 4) == 0) {
+    }
+
+    if (strncmp(start, "null", 4) == 0) {
         *is_null = true;
         *value = false;
         *json_ptr = start + 4;
@@ -139,11 +155,12 @@ bool parse_boolean_or_null(char **json_ptr, bool *is_null, bool *value)
 }
 
 // Parse a JSON object
-struct json_object *parse_object(char **json_ptr)
+static struct json_object *parse_object(char **json_ptr)
 {
     char *start = *json_ptr;
-    if (*start != '{')
+    if (*start != '{') {
         return NULL;
+    }
     start++; // Skip opening brace
     start = skip_whitespace(start);
 
@@ -155,8 +172,9 @@ struct json_object *parse_object(char **json_ptr)
 
         // Parse key
         char *key = parse_string(&start);
-        if (!key)
+        if (!key) {
             break;
+        }
 
         start = skip_whitespace(start);
         if (*start != ':') {
@@ -187,16 +205,18 @@ struct json_object *parse_object(char **json_ptr)
         } else if (*start == '[') {
             // Handle arrays - for now, we'll store them as strings
             // In a more complete implementation, we'd store a pointer to the array
-            char *array_start = start;
+            const char *array_start = start;
             int bracket_count = 0;
             while (*start) {
-                if (*start == '[')
+                if (*start == '[') {
                     bracket_count++;
-                else if (*start == ']')
+                } else if (*start == ']') {
                     bracket_count--;
+                }
                 start++;
-                if (bracket_count == 0)
+                if (bracket_count == 0) {
                     break;
+                }
             }
             size_t array_len = start - array_start;
             obj->value_string = malloc(array_len + 1);
@@ -207,16 +227,18 @@ struct json_object *parse_object(char **json_ptr)
             }
         } else if (*start == '{') {
             // Handle nested objects - for now, we'll store them as strings
-            char *obj_start = start;
+            const char *obj_start = start;
             int brace_count = 0;
             while (*start) {
-                if (*start == '{')
+                if (*start == '{') {
                     brace_count++;
-                else if (*start == '}')
+                } else if (*start == '}') {
                     brace_count--;
+                }
                 start++;
-                if (brace_count == 0)
+                if (brace_count == 0) {
                     break;
+                }
             }
             size_t obj_len = start - obj_start;
             obj->value_string = malloc(obj_len + 1);
@@ -229,7 +251,7 @@ struct json_object *parse_object(char **json_ptr)
             obj->value_number = parse_number(&start);
             obj->is_number = true;
         } else if (*start == 't' || *start == 'f' || *start == 'n') {
-            bool is_null, bool_value;
+            bool is_null = false, bool_value = false;
             if (parse_boolean_or_null(&start, &is_null, &bool_value)) {
                 if (is_null) {
                     obj->is_null = true;
@@ -264,7 +286,7 @@ struct json_object *parse_object(char **json_ptr)
 }
 
 // Parse a JSON array
-struct json_array *parse_array(char **json_ptr)
+static struct json_array *parse_array(char **json_ptr)
 {
     char *start = *json_ptr;
     if (*start != '[')
@@ -381,11 +403,8 @@ int count_objects(struct json_object *head)
 }
 
 // Recursive function to search for values in objects and arrays
-void search_string_values_recursive(struct json_object *obj,
-                                    const char *key,
-                                    char ***results,
-                                    int *count,
-                                    int *capacity)
+static void
+search_string_values_recursive(struct json_object *obj, const char *key, char ***results, int *count, int *capacity)
 {
     if (!obj)
         return;
@@ -395,7 +414,7 @@ void search_string_values_recursive(struct json_object *obj,
         // Resize array if needed
         if (*count >= *capacity) {
             *capacity = (*capacity == 0) ? 4 : *capacity * 2;
-            *results = realloc(*results, *capacity * sizeof(char *));
+            *results = (char **) realloc((void *) *results, *capacity * sizeof(char *));
         }
         (*results)[*count] = strdup(obj->value_string);
         (*count)++;
@@ -425,11 +444,8 @@ void search_string_values_recursive(struct json_object *obj,
     search_string_values_recursive(obj->next, key, results, count, capacity);
 }
 
-void search_number_values_recursive(struct json_object *obj,
-                                    const char *key,
-                                    double **results,
-                                    int *count,
-                                    int *capacity)
+static void
+search_number_values_recursive(struct json_object *obj, const char *key, double **results, int *count, int *capacity)
 {
     if (!obj)
         return;
@@ -469,11 +485,8 @@ void search_number_values_recursive(struct json_object *obj,
     search_number_values_recursive(obj->next, key, results, count, capacity);
 }
 
-void search_boolean_values_recursive(struct json_object *obj,
-                                     const char *key,
-                                     bool **results,
-                                     int *count,
-                                     int *capacity)
+static void
+search_boolean_values_recursive(struct json_object *obj, const char *key, bool **results, int *count, int *capacity)
 {
     if (!obj)
         return;
@@ -513,7 +526,8 @@ void search_boolean_values_recursive(struct json_object *obj,
     search_boolean_values_recursive(obj->next, key, results, count, capacity);
 }
 
-void search_null_values_recursive(struct json_object *obj, const char *key, bool **results, int *count, int *capacity)
+static void
+search_null_values_recursive(struct json_object *obj, const char *key, bool **results, int *count, int *capacity)
 {
     if (!obj)
         return;
@@ -719,6 +733,7 @@ struct json_object *create_boolean_object(const char *key, bool value)
     return obj;
 }
 
+// cppcheck-suppress unusedFunction
 struct json_object *create_null_object(const char *key)
 {
     struct json_object *obj = malloc(sizeof(struct json_object));
@@ -739,6 +754,7 @@ struct json_object *create_null_object(const char *key)
     return obj;
 }
 
+// cppcheck-suppress unusedFunction
 struct json_object *create_empty_object(const char *key, bool is_array)
 {
     struct json_object *obj = malloc(sizeof(struct json_object));
@@ -774,7 +790,7 @@ void append_object(struct json_object **head, struct json_object *new_obj)
 }
 
 // Helper function to serialize a json_object to string
-char *object_to_string(struct json_object *obj)
+static char *object_to_string(struct json_object *obj)
 {
     if (!obj)
         return strdup("{}");
@@ -846,7 +862,7 @@ char *object_to_string(struct json_object *obj)
 }
 
 // Helper function to serialize a json_array to string
-char *array_to_string(struct json_array *arr)
+static char *array_to_string(struct json_array *arr)
 {
     if (!arr)
         return strdup("[]");
@@ -913,7 +929,7 @@ char *json_to_string(struct json_root *root)
 
     if (root->is_array) {
         return array_to_string(root->array);
-    } else {
-        return object_to_string(root->object);
     }
+
+    return object_to_string(root->object);
 }
