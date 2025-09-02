@@ -58,6 +58,15 @@ jobs:
             xz-utils \
             zstd \
             ca-certificates \
+            libncurses5-dev \
+            libncursesw5-dev \
+            git \
+            rsync \
+            gawk \
+            unzip \
+            python3 \
+            python3-distutils \
+            python3-pip \
             && rm -rf /var/lib/apt/lists/*
         
         # Set working directory
