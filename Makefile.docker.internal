@@ -1,0 +1,30 @@
+# Internal Makefile for Docker-based builds
+# This is used inside the Docker container
+
+CC = mipsel-openwrt-linux-musl-gcc
+STRIP = mipsel-openwrt-linux-musl-strip
+CFLAGS = -Wall -Wextra -std=c99 -Os -march=24kc -mtune=24kc -msoft-float
+LDFLAGS = -lssl -lcrypto -lpthread
+
+LIBDIR = lib
+LIB_SOURCES = $(LIBDIR)/json.c \
+              $(LIBDIR)/cloudflare_utils.c \
+              $(LIBDIR)/socket_http.c \
+              $(LIBDIR)/publicip.c \
+              $(LIBDIR)/getip.c \
+              $(LIBDIR)/setip.c
+
+all: cloudflare_renew tools/getip tools/setip tools/publicip
+	$(STRIP) cloudflare_renew tools/getip tools/setip tools/publicip
+
+cloudflare_renew: cloudflare_renew.c $(LIB_SOURCES)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+tools/getip: tools/getip.c $(LIB_SOURCES)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+tools/setip: tools/setip.c $(LIB_SOURCES)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+tools/publicip: tools/publicip.c $(LIB_SOURCES)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)

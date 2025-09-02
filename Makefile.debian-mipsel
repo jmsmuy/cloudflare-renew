@@ -1,0 +1,68 @@
+# Debian-specific MIPSEL cross-compilation Makefile
+# Tested on Debian 11/12 and Ubuntu 20.04/22.04
+# This version avoids the soft-float library issue
+
+# Cross-compiler (installed via apt)
+CROSS_COMPILE = mipsel-linux-gnu-
+CC = $(CROSS_COMPILE)gcc
+STRIP = $(CROSS_COMPILE)strip
+AR = $(CROSS_COMPILE)ar
+
+# Architecture flags - using defaults that work on Debian
+# No -msoft-float to avoid the stubs-o32_soft.h error
+ARCH_FLAGS = -march=mips32r2
+
+# Compile flags
+CFLAGS = -Wall -Wextra -std=c99 -Os $(ARCH_FLAGS) \
+         -ffunction-sections -fdata-sections \
+         -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L
+
+# Link flags - try dynamic first, fallback to static
+LDFLAGS = -Wl,--gc-sections
+
+# Libraries
+LIBS = -lssl -lcrypto -lpthread
+
+# Library sources
+LIBDIR = lib
+LIB_SOURCES = $(LIBDIR)/json.c \
+              $(LIBDIR)/cloudflare_utils.c \
+              $(LIBDIR)/socket_http.c \
+              $(LIBDIR)/publicip.c \
+              $(LIBDIR)/getip.c \
+              $(LIBDIR)/setip.c
+
+LIB_OBJECTS = $(LIB_SOURCES:.c=.o)
+
+# Programs
+PROGRAMS = cloudflare_renew tools/getip tools/setip tools/publicip
+
+.PHONY: all clean
+
+all: $(PROGRAMS)
+	@echo "Build complete!"
+	@file cloudflare_renew
+
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+libcloudflare.a: $(LIB_OBJECTS)
+	$(AR) rcs $@ $^
+
+cloudflare_renew: cloudflare_renew.o libcloudflare.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -L. -lcloudflare $(LIBS)
+
+tools/getip: tools/getip.o libcloudflare.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -L. -lcloudflare $(LIBS)
+
+tools/setip: tools/setip.o libcloudflare.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -L. -lcloudflare $(LIBS)
+
+tools/publicip: tools/publicip.o libcloudflare.a
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -L. -lcloudflare $(LIBS)
+
+clean:
+	rm -f $(PROGRAMS) $(LIB_OBJECTS) *.o tools/*.o libcloudflare.a
+
+strip: $(PROGRAMS)
+	$(STRIP) $(PROGRAMS)

@@ -1,0 +1,63 @@
+# Dockerfile for MIPSEL with musl libc (most OpenWrt routers)
+FROM alpine:latest AS builder
+
+# Install build tools and musl cross-compiler
+RUN apk add --no-cache \
+    build-base \
+    wget \
+    make \
+    linux-headers \
+    openssl-dev \
+    openssl-libs-static
+
+# Download and build musl cross-compiler for MIPSEL
+WORKDIR /build
+RUN wget https://musl.cc/mipsel-linux-musl-cross.tgz && \
+    tar xzf mipsel-linux-musl-cross.tgz && \
+    rm mipsel-linux-musl-cross.tgz
+
+# Set up cross-compilation environment
+ENV PATH="/build/mipsel-linux-musl-cross/bin:${PATH}"
+ENV CC=mipsel-linux-musl-gcc
+ENV AR=mipsel-linux-musl-ar
+ENV STRIP=mipsel-linux-musl-strip
+
+# Copy source
+COPY . /src
+WORKDIR /src
+
+# Build with musl
+RUN cat > Makefile.musl << 'EOF'
+CC = mipsel-linux-musl-gcc
+STRIP = mipsel-linux-musl-strip
+CFLAGS = -Wall -Wextra -std=c99 -Os \
+         -march=mips32 -mtune=mips32 \
+         -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L \
+         -static
+LDFLAGS = -static -s
+LIBS = -lssl -lcrypto -lpthread
+
+LIBDIR = lib
+LIB_SOURCES = $(LIBDIR)/json.c $(LIBDIR)/cloudflare_utils.c \
+              $(LIBDIR)/socket_http.c $(LIBDIR)/publicip.c \
+              $(LIBDIR)/getip.c $(LIBDIR)/setip.c
+
+all: cloudflare_renew tools/getip tools/setip tools/publicip
+	$(STRIP) -s cloudflare_renew tools/getip tools/setip tools/publicip
+
+cloudflare_renew: cloudflare_renew.c $(LIB_SOURCES)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+
+tools/getip: tools/getip.c $(LIB_SOURCES)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+
+tools/setip: tools/setip.c $(LIB_SOURCES)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+
+tools/publicip: tools/publicip.c $(LIB_SOURCES)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS)
+EOF
+
+RUN make -f Makefile.musl
+
+CMD ["sh", "-c", "cp cloudflare_renew tools/getip tools/setip tools/publicip /output/"]

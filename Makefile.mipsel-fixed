@@ -1,0 +1,214 @@
+# Fixed MIPSEL cross-compilation Makefile for Debian/Ubuntu
+# Handles the soft-float library issue
+# Usage: make -f Makefile.mipsel-fixed [target]
+
+# Cross-compiler prefix
+CROSS_COMPILE ?= mipsel-linux-gnu-
+
+# Toolchain binaries
+CC = $(CROSS_COMPILE)gcc
+AR = $(CROSS_COMPILE)ar
+STRIP = $(CROSS_COMPILE)strip
+
+# Target architecture flags
+# Using hard-float which is standard on Debian cross-compiler
+# and compatible with most modern MIPSEL routers
+ARCH_FLAGS = -march=mips32r2 -mtune=24kc
+
+# Alternative flags for different scenarios:
+# For older routers: ARCH_FLAGS = -march=mips32 -mtune=mips32
+# For newer routers: ARCH_FLAGS = -march=mips32r2 -mtune=24kc
+# Force soft-float: ARCH_FLAGS = -march=mips32r2 -msoft-float -mfloat-abi=soft
+
+# Compilation flags
+CFLAGS = -Wall -Wextra -std=c99 -Os $(ARCH_FLAGS) \
+         -ffunction-sections -fdata-sections \
+         -D_GNU_SOURCE -D_POSIX_C_SOURCE=200809L \
+         -I/usr/include
+
+# Linker flags - static linking for better compatibility
+LDFLAGS = -Wl,--gc-sections -static
+
+# Libraries
+LIBS = -lssl -lcrypto -lpthread -ldl
+
+# Source files
+LIBDIR = lib
+LIB_SOURCES = $(LIBDIR)/json.c \
+              $(LIBDIR)/cloudflare_utils.c \
+              $(LIBDIR)/socket_http.c \
+              $(LIBDIR)/publicip.c \
+              $(LIBDIR)/getip.c \
+              $(LIBDIR)/setip.c
+
+LIB_HEADERS = $(LIBDIR)/json.h \
+              $(LIBDIR)/cloudflare_utils.h \
+              $(LIBDIR)/socket_http.h \
+              $(LIBDIR)/publicip.h \
+              $(LIBDIR)/getip.h \
+              $(LIBDIR)/setip.h
+
+# Object files
+LIB_OBJECTS = $(LIB_SOURCES:.c=.o)
+
+# Target programs
+PROGRAMS = cloudflare_renew tools/getip tools/setip tools/publicip
+
+# Build directory
+BUILD_DIR = build-mipsel
+
+.PHONY: all clean strip size install test-compile help deps-check
+
+# Default target
+all: deps-check $(PROGRAMS)
+	@echo "✓ Build complete for MIPSEL"
+	@echo "  Architecture: MIPS32r2 (24Kc optimized)"
+	@echo "  Float ABI: Hardware float (standard)"
+
+# Check dependencies
+deps-check:
+	@echo "Checking build dependencies..."
+	@which $(CC) > /dev/null 2>&1 || { \
+		echo "Error: $(CC) not found!"; \
+		echo ""; \
+		echo "Installing MIPSEL cross-compiler on Debian/Ubuntu:"; \
+		echo "  sudo apt-get update"; \
+		echo "  sudo apt-get install gcc-mipsel-linux-gnu"; \
+		echo "  sudo apt-get install libc6-dev-mipsel-cross"; \
+		echo ""; \
+		echo "For static OpenSSL linking, also install:"; \
+		echo "  sudo apt-get install libssl-dev:mipsel"; \
+		echo "(Note: This may require multiarch setup)"; \
+		exit 1; \
+	}
+	@echo "✓ Toolchain found: $(CC)"
+
+# Test compilation to detect float ABI issues
+test-compile:
+	@echo "Testing compiler configuration..."
+	@echo 'int main() { return 0; }' > test.c
+	@if $(CC) $(ARCH_FLAGS) test.c -o test 2>/dev/null; then \
+		echo "✓ Compiler works with current flags"; \
+		rm -f test test.c; \
+	else \
+		echo "✗ Compilation failed with current flags"; \
+		echo "Trying alternative configurations..."; \
+		if $(CC) -march=mips32r2 test.c -o test 2>/dev/null; then \
+			echo "✓ Works without float specification"; \
+			echo "Recommendation: Remove -msoft-float from ARCH_FLAGS"; \
+		elif $(CC) -march=mips32 test.c -o test 2>/dev/null; then \
+			echo "✓ Works with mips32"; \
+			echo "Recommendation: Use ARCH_FLAGS = -march=mips32"; \
+		fi; \
+		rm -f test test.c; \
+	fi
+
+# Pattern rule for object files
+%.o: %.c $(LIB_HEADERS)
+	@echo "  CC    $<"
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+# Build static library
+libcloudflare.a: $(LIB_OBJECTS)
+	@echo "  AR    $@"
+	@$(AR) rcs $@ $^
+
+# Build programs
+cloudflare_renew: cloudflare_renew.o libcloudflare.a
+	@echo "  LD    $@"
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -L. -lcloudflare $(LIBS) || \
+	(echo ""; echo "If linking fails, try:"; \
+	 echo "1. Install static libraries:"; \
+	 echo "   sudo apt-get install libssl-dev libc6-dev-mipsel-cross"; \
+	 echo "2. Or remove -static from LDFLAGS for dynamic linking"; \
+	 echo "3. Or compile without SSL:"; \
+	 echo "   make -f Makefile.mipsel-fixed LIBS='-lpthread -ldl'"; \
+	 false)
+
+tools/getip: tools/getip.o libcloudflare.a
+	@echo "  LD    $@"
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -L. -lcloudflare $(LIBS)
+
+tools/setip: tools/setip.o libcloudflare.a
+	@echo "  LD    $@"
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -L. -lcloudflare $(LIBS)
+
+tools/publicip: tools/publicip.o libcloudflare.a
+	@echo "  LD    $@"
+	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $< -L. -lcloudflare $(LIBS)
+
+# Alternative build without static linking
+dynamic: LDFLAGS = -Wl,--gc-sections
+dynamic: all
+	@echo "Built with dynamic linking"
+
+# Strip binaries
+strip: $(PROGRAMS)
+	@echo "Stripping binaries..."
+	@$(STRIP) -s $(PROGRAMS)
+	@echo "✓ Binaries stripped"
+
+# Show sizes
+size: $(PROGRAMS)
+	@echo "Binary sizes:"
+	@ls -lh $(PROGRAMS) | awk '{print "  " $$NF ": " $$5}'
+
+# Create distribution
+dist: all strip
+	@mkdir -p $(BUILD_DIR)/bin
+	@mkdir -p $(BUILD_DIR)/etc
+	@cp $(PROGRAMS) $(BUILD_DIR)/bin/
+	@cp cloudflare.conf.sample $(BUILD_DIR)/etc/
+	@tar czf cloudflare-renew-mipsel.tar.gz -C $(BUILD_DIR) .
+	@echo "✓ Distribution package created: cloudflare-renew-mipsel.tar.gz"
+
+# Install
+DESTDIR ?= /tmp/cloudflare-install
+install: all strip
+	@mkdir -p $(DESTDIR)/usr/bin
+	@mkdir -p $(DESTDIR)/etc/cloudflare
+	@cp cloudflare_renew $(DESTDIR)/usr/bin/
+	@cp tools/getip $(DESTDIR)/usr/bin/cloudflare-getip
+	@cp tools/setip $(DESTDIR)/usr/bin/cloudflare-setip
+	@cp tools/publicip $(DESTDIR)/usr/bin/cloudflare-publicip
+	@cp cloudflare.conf.sample $(DESTDIR)/etc/cloudflare/
+	@echo "✓ Installed to $(DESTDIR)"
+
+# Clean
+clean:
+	@rm -f $(PROGRAMS)
+	@rm -f $(LIB_OBJECTS)
+	@rm -f tools/*.o cloudflare_renew.o
+	@rm -f libcloudflare.a
+	@rm -rf $(BUILD_DIR)
+	@rm -f cloudflare-renew-mipsel.tar.gz
+	@rm -f test test.c
+	@echo "✓ Clean complete"
+
+# Help
+help:
+	@echo "MIPSEL Cross-Compilation Makefile (Fixed for Debian/Ubuntu)"
+	@echo ""
+	@echo "This version handles the soft-float library issue on Debian"
+	@echo ""
+	@echo "Installation on Debian/Ubuntu:"
+	@echo "  sudo apt-get update"
+	@echo "  sudo apt-get install gcc-mipsel-linux-gnu"
+	@echo "  sudo apt-get install libc6-dev-mipsel-cross"
+	@echo ""
+	@echo "Targets:"
+	@echo "  all          - Build all programs (default)"
+	@echo "  dynamic      - Build with dynamic linking"
+	@echo "  test-compile - Test compiler configuration"
+	@echo "  strip        - Strip debug symbols"
+	@echo "  size         - Show binary sizes"
+	@echo "  dist         - Create distribution package"
+	@echo "  clean        - Remove build artifacts"
+	@echo "  help         - Show this help"
+	@echo ""
+	@echo "Quick build:"
+	@echo "  make -f Makefile.mipsel-fixed"
+	@echo ""
+	@echo "If you get float ABI errors, try:"
+	@echo "  make -f Makefile.mipsel-fixed test-compile"
+	@echo "  make -f Makefile.mipsel-fixed dynamic"
