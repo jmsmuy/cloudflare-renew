@@ -60,8 +60,10 @@ RUN cp /build/source/.config openwrt-sdk/.config
 RUN cp /build/source/Makefile.openwrt openwrt-sdk/package/cloudflare-renew/Makefile
 
 # Update and install feeds
-RUN ./openwrt-sdk/scripts/feeds update cloudflare-renew
+RUN ./openwrt-sdk/scripts/feeds update -a
 RUN ./openwrt-sdk/scripts/feeds install -a
+RUN ./openwrt-sdk/scripts/feeds update cloudflare-renew
+RUN ./openwrt-sdk/scripts/feeds install -a -p cloudflare-renew
 
 # Build the package
 RUN cd openwrt-sdk && make package/cloudflare-renew/compile V=s
