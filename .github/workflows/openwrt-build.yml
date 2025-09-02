@@ -23,10 +23,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [ramips]
-        subtarget: [mt7621]
-        sdk_version: [24.10.2]
-        gcc_version: [13.3.0]
+        include:
+          # ramips/mt7621 combination
+          - target: ramips
+            subtarget: mt7621
+            sdk_version: 24.10.2
+            gcc_version: 13.3.0
+          # x86_64 combination
+          - target: x86
+            subtarget: 64
+            sdk_version: 24.10.2
+            gcc_version: 13.3.0
     
     steps:
     - name: Checkout code
