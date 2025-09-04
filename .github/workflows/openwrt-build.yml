@@ -109,7 +109,7 @@ jobs:
         echo "SDK Version: ${{ matrix.sdk_version }}"
         echo "Build Status: ✅ Success"
         echo ""
-        ls -la build/source/
+        tree .
         echo "Built binaries:"
         ls -la build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/
         echo ""
