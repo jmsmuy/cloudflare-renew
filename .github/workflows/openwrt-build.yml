@@ -69,7 +69,7 @@ jobs:
         docker cp local_cloudflare-openwrt:/build/cloudflare-renew.ipk .
 
         mv cloudflare-renew.ipk build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/cloudflare-renew-${{ matrix.sdk_version }}-${{ matrix.target }}.ipk
-        
+        rm -rf build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/source/
         echo "✅ Build completed for ${{ matrix.target }}-${{ matrix.subtarget }} on ${{ matrix.sdk_version }}"
         
     - name: Upload OpenWrt binaries
