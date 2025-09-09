@@ -104,12 +104,6 @@ To compile for a specific OpenWrt flavor locally:
    ```
 
 2. **Setup Docker** (if not already installed):
-   ```bash
-   # Ubuntu/Debian
-   sudo apt-get install docker.io
-   sudo systemctl start docker
-   sudo usermod -aG docker $USER
-   ```
 
 3. **Build the Docker image** with your desired SDK:
    ```bash
