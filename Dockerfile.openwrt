@@ -73,6 +73,8 @@ RUN cd openwrt-sdk && make package/cloudflare-renew/compile V=s
 # # Copy the compiled package to a known location
 RUN find openwrt-sdk/bin/packages -name "cloudflare-renew*.ipk" -exec cp {} /build/ \;
 
+RUN tree /build
+
 # # Create tarball with the compiled package
 RUN cd /build && tar -czf cloudflare-renew-openwrt-package.tar.gz *.ipk
 
