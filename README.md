@@ -211,7 +211,7 @@ Each release includes:
 - **Actions**:
   - Cross-compilation for multiple OpenWrt targets
   - Support for OpenWrt 22.03.5 and 23.05.0
-  - Architecture targets: x86_64, ARM, MIPS, AArch64
+  - Architecture targets: x86_64, MIPS and ATH79
   - Automated binary packaging and artifact uploads
   - Integration with release workflow for distribution
 
