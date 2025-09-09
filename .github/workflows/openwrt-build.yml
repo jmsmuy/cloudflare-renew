@@ -30,10 +30,15 @@ jobs:
             sdk_version: 24.10.2
             gcc_version: 13.3.0
           # x86_64 combination
-          # - target: x86
-          #   subtarget: 64
-          #   sdk_version: 24.10.2
-          #   gcc_version: 13.3.0
+          - target: x86
+            subtarget: 64
+            sdk_version: 24.10.2
+            gcc_version: 13.3.0
+          # WDR4300 combination
+          - target: ath79
+            subtarget: generic
+            sdk_version: 24.10.2
+            gcc_version: 13.3.0
     
     steps:
     - name: Checkout code
@@ -65,16 +70,13 @@ jobs:
 
         mv cloudflare-renew.ipk build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/cloudflare-renew-${{ matrix.sdk_version }}-${{ matrix.target }}.ipk
         
-        # Clean up Docker image
-        # docker rmi openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }}
-        
         echo "✅ Build completed for ${{ matrix.target }}-${{ matrix.subtarget }} on ${{ matrix.sdk_version }}"
         
     - name: Upload OpenWrt binaries
       uses: actions/upload-artifact@v4
       with:
         name: openwrt-binaries-${{ matrix.sdk_version }}-${{ matrix.target }}
-        path: build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/
+        path: build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/cloudflare-renew-${{ matrix.sdk_version }}-${{ matrix.target }}.ipk
         retention-days: 30
         
     - name: Create release assets
@@ -116,6 +118,3 @@ jobs:
         echo ""
         echo "Built binaries:"
         ls -la build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/
-        echo ""
-        echo "Package:"
-        ls -lh build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/*.tar.gz
