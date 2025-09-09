@@ -3,12 +3,6 @@ name: Release - Build & Deploy Binaries
 on:
   push:
     branches: [ main ]
-    paths:
-      - '**.c'
-      - '**.h'
-      - 'Makefile'
-      - 'VERSION'
-      - '.github/workflows/release.yml'
   workflow_dispatch:
     inputs:
       version:

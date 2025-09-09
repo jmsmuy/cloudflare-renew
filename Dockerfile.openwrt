@@ -20,9 +20,10 @@ RUN apt-get update && apt-get install -y \
     file \
     swig \
     tree \
+    vim \
+    nano \
     && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /build
 
 # Download and extract OpenWrt SDK
@@ -35,7 +36,7 @@ RUN tar -xf openwrt-sdk.tar.zst && \
     mv openwrt-sdk-* openwrt-sdk
 
 # Copy source code into container
-COPY . /build/source
+COPY ./source /build/source
 
 # Create package
 RUN mkdir -p openwrt-sdk/package
@@ -60,20 +61,20 @@ RUN cp /build/source/tools/publicip.c openwrt-sdk/package/cloudflare-renew/src/t
 RUN cp /build/source/.config openwrt-sdk/.config
 RUN cp /build/source/Makefile.openwrt openwrt-sdk/package/cloudflare-renew/Makefile
 
-# Update and install feeds
+# # Update and install feeds
 RUN ./openwrt-sdk/scripts/feeds update -a
 RUN ./openwrt-sdk/scripts/feeds install -a
 RUN ./openwrt-sdk/scripts/feeds update cloudflare-renew
 RUN ./openwrt-sdk/scripts/feeds install -a -p cloudflare-renew
 
-# Build the package
+# # Build the package
 RUN cd openwrt-sdk && make package/cloudflare-renew/compile V=s
 
-# Copy the compiled package to a known location
+# # Copy the compiled package to a known location
 RUN find openwrt-sdk/bin/packages -name "cloudflare-renew*.ipk" -exec cp {} /build/ \;
 
-# Create tarball with the compiled package
+# # Create tarball with the compiled package
 RUN cd /build && tar -czf cloudflare-renew-openwrt-package.tar.gz *.ipk
 
-# Copy result to host
-RUN cp /build/cloudflare-renew-openwrt-package.tar.gz /build/source/build/
+# # Copy result to host
+RUN cp /build/cloudflare-renew-openwrt-package.tar.gz /build/host/
