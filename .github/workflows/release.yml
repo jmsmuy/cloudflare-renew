@@ -126,7 +126,7 @@ jobs:
         
         # Verify binaries
         echo "📋 Built binaries:"
-        ls -la tools/ cloudflare_renew
+        ls -la tools/
         file tools/getip tools/setip tools/publicip cloudflare_renew
         
         # Test basic functionality
