@@ -76,7 +76,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: openwrt-binaries-${{ matrix.sdk_version }}-${{ matrix.target }}
-        path: build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/cloudflare-renew-${{ matrix.sdk_version }}-${{ matrix.target }}.ipk
+        path: build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/
         retention-days: 30
         
     - name: Create release assets
