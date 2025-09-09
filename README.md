@@ -93,7 +93,46 @@ make lint           # Run all linters (cppcheck, clang-tidy)
 ```
 
 ### OpenWrt Builds
-The project includes automated OpenWrt builds via GitHub Actions for x86_64 and mipsel_24k architectures
+The project includes automated OpenWrt builds via GitHub Actions for multiple architectures.
+
+#### Manual OpenWrt Compilation
+To compile for a specific OpenWrt flavor locally:
+
+1. **Download the Dockerfile**:
+   ```bash
+   wget https://raw.githubusercontent.com/jmsmuy/cloudflare-renew/main/Dockerfile.openwrt.local
+   ```
+
+2. **Setup Docker** (if not already installed):
+   ```bash
+   # Ubuntu/Debian
+   sudo apt-get install docker.io
+   sudo systemctl start docker
+   sudo usermod -aG docker $USER
+   ```
+
+3. **Build the Docker image** with your desired SDK:
+   ```bash
+   sudo docker build . --build-arg SDK_URL="https://downloads.openwrt.org/releases/24.10.2/targets/ramips/mt7621/openwrt-sdk-24.10.2-ramips-mt7621_gcc-13.3.0_musl.Linux-x86_64.tar.zst" -t cloudflare-openwrt
+   ```
+   
+   Replace the `SDK_URL` with the URL for your desired OpenWrt SDK version and target architecture.
+
+4. **Run the build**:
+   ```bash
+   sudo docker run --name local_cloudflare-openwrt cloudflare-openwrt
+   ```
+
+5. **Extract the compiled package**:
+   ```bash
+   sudo docker cp local_cloudflare-openwrt:/build/* .
+   ```
+
+#### Available SDK URLs
+Common OpenWrt SDK URLs for different architectures:
+- **x86_64**: `https://downloads.openwrt.org/releases/24.10.2/targets/x86/64/openwrt-sdk-24.10.2-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst`
+- **ramips/mt7621**: `https://downloads.openwrt.org/releases/24.10.2/targets/ramips/mt7621/openwrt-sdk-24.10.2-ramips-mt7621_gcc-13.3.0_musl.Linux-x86_64.tar.zst`
+- **ath79/generic**: `https://downloads.openwrt.org/releases/24.10.2/targets/ath79/generic/openwrt-sdk-24.10.2-ath79-generic_gcc-13.3.0_musl.Linux-x86_64.tar.zst`
 
 #### Build Artifacts
 Each build produces:
@@ -101,7 +140,6 @@ Each build produces:
 - Configuration templates and documentation
 - Installation script for OpenWrt devices
 - Compressed package ready for deployment
-```
 
 ## Usage
 
