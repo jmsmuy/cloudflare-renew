@@ -71,7 +71,7 @@ RUN ./openwrt-sdk/scripts/feeds install -a -p cloudflare-renew
 RUN cd openwrt-sdk && make package/cloudflare-renew/compile V=s
 
 # # Copy the compiled package to a known location
-RUN find openwrt-sdk/bin/packages -name "cloudflare-renew*.ipk" -exec cp {} /build/ \;
+RUN find openwrt-sdk/bin/packages -name "cloudflare-renew*.ipk" -exec cp {} /build/cloudflare-renew.ipk \;
 
 RUN tree /build
 

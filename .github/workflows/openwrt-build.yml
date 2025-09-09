@@ -61,9 +61,9 @@ jobs:
 
         docker run --name local_cloudflare-openwrt openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }} true
 
-        docker cp local_cloudflare-openwrt:/build/*.ipk .
+        docker cp local_cloudflare-openwrt:/build/cloudflare-renew.ipk .
 
-        mv *.ipk build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/cloudflare-renew-${{ matrix.sdk_version }}-${{ matrix.target }}.ipk
+        mv cloudflare-renew.ipk build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/cloudflare-renew-${{ matrix.sdk_version }}-${{ matrix.target }}.ipk
         
         # Clean up Docker image
         # docker rmi openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }}
