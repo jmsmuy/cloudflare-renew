@@ -66,7 +66,7 @@ jobs:
         mv cloudflare-renew-openwrt-package.tar.gz build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/cloudflare-renew-${{ matrix.sdk_version }}-${{ matrix.target }}.tar.gz
         
         # Clean up Docker image
-        docker rmi openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }}
+        # docker rmi openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }}
         
         echo "✅ Build completed for ${{ matrix.target }}-${{ matrix.subtarget }} on ${{ matrix.sdk_version }}"
         
