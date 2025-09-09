@@ -126,8 +126,8 @@ jobs:
         
         # Verify binaries
         echo "📋 Built binaries:"
-        ls -la tools/
-        file tools/getip tools/setip tools/publicip cloudflare_renew
+        ls -la tools/ cloudflare-renew
+        file tools/getip tools/setip tools/publicip cloudflare-renew
         
         # Test basic functionality
         echo "🧪 Testing binaries..."
@@ -143,7 +143,7 @@ jobs:
         mkdir -p release/cloudflare-renew
         
         # Copy binaries
-        cp tools/getip tools/setip tools/publicip cloudflare_renew release/cloudflare-renew/
+        cp tools/getip tools/setip tools/publicip cloudflare-renew release/cloudflare-renew/
         
         # Copy configuration templates and documentation
         cp cloudflare.conf.sample release/cloudflare-renew/
@@ -174,7 +174,7 @@ jobs:
         
         echo ""
         echo "✅ Setup complete! Available commands:"
-        echo "   ./cloudflare_renew          - Automatic DNS management"
+        echo "   ./cloudflare-renew          - Automatic DNS management"
         echo "   ./getip <config> <token>    - Get current DNS IP"
         echo "   ./setip <config> <token> <ip> - Set DNS IP"
         echo "   ./publicip                  - Get public IP"
@@ -214,7 +214,7 @@ jobs:
         path: |
           release/cloudflare-renew-linux-x64.tar.gz
           tools/
-          cloudflare_renew
+          cloudflare-renew
         retention-days: 30
 
   update-docs:
