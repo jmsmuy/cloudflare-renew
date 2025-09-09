@@ -58,6 +58,12 @@ jobs:
             --build-arg SDK_URL="https://downloads.openwrt.org/releases/${{ matrix.sdk_version }}/targets/${{ matrix.target }}/${{ matrix.subtarget }}/openwrt-sdk-${{ matrix.sdk_version }}-${{ matrix.target }}-${{ matrix.subtarget }}_gcc-${{ matrix.gcc_version }}_musl.Linux-x86_64.tar.zst" \
             -f Dockerfile.openwrt \
             -t openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }} .
+
+        docker run --name local_cloudflare-openwrt openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }} true
+
+        docker cp local_cloudflare-openwrt:/build/cloudflare-renew-openwrt-package.tar.gz .
+
+        mv cloudflare-renew-openwrt-package.tar.gz build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/cloudflare-renew-${{ matrix.sdk_version }}-${{ matrix.target }}.tar.gz
         
         # Clean up Docker image
         docker rmi openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }}
@@ -68,7 +74,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: openwrt-binaries-${{ matrix.sdk_version }}-${{ matrix.target }}
-        path: build/source/
+        path: cloudflare-renew-openwrt-package.tar.gz
         # path: build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/
         retention-days: 30
         
@@ -109,7 +115,6 @@ jobs:
         echo "SDK Version: ${{ matrix.sdk_version }}"
         echo "Build Status: ✅ Success"
         echo ""
-        tree .
         echo "Built binaries:"
         ls -la build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/
         echo ""
