@@ -36,7 +36,7 @@ RUN tar -xf openwrt-sdk.tar.zst && \
     mv openwrt-sdk-* openwrt-sdk
 
 # Copy source code into container
-COPY ./source /build/source
+COPY . /build/source
 
 # Create package
 RUN mkdir -p openwrt-sdk/package
