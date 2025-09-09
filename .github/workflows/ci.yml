@@ -1,8 +1,8 @@
 name: CI - Code Quality & Tests
 
 on:
-  pull_request:
-    branches: [ main ]
+  push:
+    branches-ignore: [ main ]
     paths:
       - '**.c'
       - '**.h'
