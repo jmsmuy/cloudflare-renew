@@ -1,8 +1,8 @@
 name: CI - Code Quality & Tests
 
 on:
-  pull_request:
-    branches: [ main ]
+  push:
+    branches-ignore: [ main ]
     paths:
       - '**.c'
       - '**.h'
@@ -59,8 +59,8 @@ jobs:
       run: |
         echo "✅ Verifying executables exist..."
         ls -la tools/
-        ls -la cloudflare_renew
-        file tools/getip tools/setip tools/publicip cloudflare_renew
+        ls -la cloudflare-renew
+        file tools/getip tools/setip tools/publicip cloudflare-renew
         
     - name: Test help commands
       run: |
@@ -74,8 +74,8 @@ jobs:
         echo "# publicip help"
         ./tools/publicip --help || ./tools/publicip -h || echo "No help flag available"
         echo ""
-        echo "# cloudflare_renew help"
-        echo "cloudflare_renew requires config files, skipping help test"
+        echo "# cloudflare-renew help"
+        echo "cloudflare-renew requires config files, skipping help test"
         
     - name: Check for configuration template
       run: |
