@@ -76,6 +76,7 @@ jobs:
         
         ### Downloads
         - **Linux x86_64**: `cloudflare-renew-linux-x64.tar.gz`
+        - **OpenWrt Packages**: Various `.ipk` files for different architectures
         - **Source Code**: Use the source code links below
         
         ### Quick Start
@@ -217,10 +218,96 @@ jobs:
           cloudflare-renew
         retention-days: 30
 
+  build-openwrt:
+    name: Build OpenWrt Binaries
+    runs-on: ubuntu-latest
+    needs: create-release
+    if: needs.create-release.outputs.release_created == 'true'
+    strategy:
+      matrix:
+        include:
+          # ramips/mt7621 combination
+          - target: ramips
+            subtarget: mt7621
+            sdk_version: 24.10.2
+            gcc_version: 13.3.0
+          # x86_64 combination
+          - target: x86
+            subtarget: 64
+            sdk_version: 24.10.2
+            gcc_version: 13.3.0
+          # WDR4300 combination
+          - target: ath79
+            subtarget: generic
+            sdk_version: 24.10.2
+            gcc_version: 13.3.0
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Build OpenWrt binaries
+      run: |
+        echo "🔨 Building for OpenWrt ${{ matrix.sdk_version }} - ${{ matrix.target }}"
+        
+        # Create build directory
+        mkdir -p build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}
+        
+        # Prepare source files for Docker build
+        mkdir -p build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/source
+        cp -r lib/ tools/ cloudflare_renew.c Makefile Makefile.openwrt cloudflare.conf.sample README.md LICENSE getip-all.sh setip-all.sh build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/source/
+        
+        # Build Docker image using the dedicated Dockerfile
+        docker build \
+            --build-arg SDK_URL="https://downloads.openwrt.org/releases/${{ matrix.sdk_version }}/targets/${{ matrix.target }}/${{ matrix.subtarget }}/openwrt-sdk-${{ matrix.sdk_version }}-${{ matrix.target }}-${{ matrix.subtarget }}_gcc-${{ matrix.gcc_version }}_musl.Linux-x86_64.tar.zst" \
+            -f Dockerfile.openwrt \
+            -t openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }} .
+
+        docker run --name local_cloudflare-openwrt openwrt-builder-${{ matrix.target }}-${{ matrix.sdk_version }} true
+
+        docker cp local_cloudflare-openwrt:/build/cloudflare-renew.ipk .
+
+        mv cloudflare-renew.ipk build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/cloudflare-renew-${{ matrix.sdk_version }}-${{ matrix.target }}.ipk
+        rm -rf build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/source/
+        echo "✅ Build completed for ${{ matrix.target }}-${{ matrix.subtarget }} on ${{ matrix.sdk_version }}"
+        
+    - name: Upload OpenWrt binaries to release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        VERSION="${{ needs.create-release.outputs.tag_name }}"
+        echo "📤 Uploading OpenWrt binaries to release $VERSION"
+        
+        # Upload the OpenWrt binary package to the release
+        gh release upload "$VERSION" \
+          ./build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/cloudflare-renew-${{ matrix.sdk_version }}-${{ matrix.target }}.ipk \
+          --clobber
+        
+    - name: Upload OpenWrt binaries
+      uses: actions/upload-artifact@v4
+      with:
+        name: openwrt-binaries-${{ matrix.sdk_version }}-${{ matrix.target }}
+        path: build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/
+        retention-days: 30
+        
+    - name: Build summary
+      run: |
+        echo "🏗️  OpenWrt Build Summary"
+        echo "========================="
+        echo "Target: ${{ matrix.target }}"
+        echo "SDK Version: ${{ matrix.sdk_version }}"
+        echo "Build Status: ✅ Success"
+        echo ""
+        echo "Built binaries:"
+        ls -la build/openwrt-${{ matrix.sdk_version }}-${{ matrix.target }}/
+
   update-docs:
     name: Update Documentation
     runs-on: ubuntu-latest
-    needs: [create-release, build-linux]
+    needs: [create-release, build-linux, build-openwrt]
     if: needs.create-release.outputs.release_created == 'true'
     
     steps:
