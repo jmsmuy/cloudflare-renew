@@ -1,260 +1,77 @@
-# Cloudflare DNS Renew
+# Atlassian Field Data Scraper
 
-A C-based dynamic DNS client for Cloudflare that automatically updates DNS records when your public IP changes.
+This repository contains tools to scrape and organize field data from Atlassian wiki pages into a structured format.
 
-## Features
+## Problem
+You need to extract field information from three sections of an Atlassian wiki page:
+- Initial Quote Fields
+- Finalize Quote Fields  
+- Bind Quote Fields
 
-- **Automatic IP Detection**: Fetches your public IP from `ipinfo.io`
-- **DNS Record Management**: Gets and sets DNS records via Cloudflare API
-- **Multi-Domain Support**: Manages multiple domains from a single configuration
-- **State Tracking**: Remembers last IP to avoid unnecessary updates
-- **Comprehensive Logging**: Logs all operations to `cloudflare.log`
-- **Cross-Platform**: Compiles for multiple architectures
-- **Static Linking**: Produces standalone binaries with no dependencies
+## Desired Output Format
+The data should be organized into columns:
+1. **Field Name**: Hierarchical field name (e.g., "Named Insureds - Locations - Address - Zip Code")
+2. **JSON Path**: Location within JSON structure (e.g., "namedInsureds[*].locations[*].address.zipCode")
+3. **Required for Quote**: Boolean indicating if field is required for quotes
+4. **Required for Bind**: Boolean indicating if field is required for binding
+5. **Section**: Which section the field comes from (Initial, Finalize, or Bind)
+6. **Description**: Plain English description of what the field represents
 
-## Project Structure
+## Available Tools
 
-```
-├── cloudflare_renew.c      # Main automatic renewal program
-├── tools/                  # Individual utility programs
-│   ├── getip.c            # Get current DNS record IP
-│   ├── setip.c            # Set DNS record IP
-│   └── publicip.c         # Get public IP address
-├── lib/                    # Shared libraries
-│   ├── json.c/.h          # Custom JSON parser/serializer
-│   ├── cloudflare_utils.c/.h  # Cloudflare API utilities
-│   ├── getip.c/.h         # DNS record retrieval library
-│   ├── setip.c/.h         # DNS record update library
-│   ├── publicip.c/.h      # Public IP detection library
-│   └── http_utils.c/.h    # HTTP response handling utilities
-├── tests/                  # Test programs
-├── scripts/               # Shell scripts for bulk operations
-│   ├── getip-all.sh       # Check all configured domains
-│   └── setip-all.sh       # Update all configured domains
-└── Makefile               # Build system
-```
+### 1. Automated Scraper (`scrape_atlassian_fields.py`)
+Attempts to automatically scrape the Atlassian wiki page. Requires:
+- Network access to the Atlassian instance
+- Authentication credentials (if the page is private)
 
-## Configuration
+### 2. Manual Data Processor (`field_data_processor.py`)
+Helps structure manually copied data into the desired format.
 
-### cloudflare.conf
-Contains non-sensitive configuration for multiple domains:
+## Usage Options
+
+### Option 1: Manual Data Entry
+If you can copy the content from the wiki pages or PDF:
+
+1. Run the processor:
 ```bash
-# Entry 0: Primary domain
-ZONE_ID[0]=your_zone_id_here
-DNS_RECORD_ID[0]=your_dns_record_id_here
-DOMAIN_NAME[0]=example.com
-
-# Entry 1: Secondary domain
-ZONE_ID[1]=your_zone_id_here
-DNS_RECORD_ID[1]=your_dns_record_id_here
-DOMAIN_NAME[1]=subdomain.example.com
+python3 field_data_processor.py
 ```
 
-### cloudflare.token
-Contains your Cloudflare API token:
-```
-your_cloudflare_api_token_here
-```
+2. Modify the script to add your actual field data in the `example_usage()` function.
 
-## Building
+### Option 2: Provide Authentication
+If you have Atlassian credentials:
 
-### Prerequisites
-- GCC compiler
-- libcurl development headers
-- OpenSSL development headers
-- zlib development headers
-
-### Development Tools (Optional)
-For code formatting and linting:
-- clang-format (code formatting)
-- clang-tidy (static analysis)
-- cppcheck (additional static analysis)
-
-Install with: `make install-tools`
-
-### Compile for local architecture
-```bash
-make
+1. Edit `scrape_atlassian_fields.py`
+2. Add your username and password/token:
+```python
+scraper = AtlassianFieldScraper(base_url, username="your_username", password="your_token")
 ```
 
-### Build individual components
-```bash
-make tools          # Build all tools
-make tests           # Build all tests
-make clean           # Clean build artifacts
+### Option 3: Copy Page Content
+If you can copy the HTML content from the browser:
+
+1. Save the page HTML to a file
+2. Modify the scraper to read from the local file instead of making HTTP requests
+
+## Output Files
+The tools will generate:
+- `master_field_list.csv` - Structured data in CSV format
+- `master_field_list.json` - Structured data in JSON format
+
+## Example Output
+```csv
+field_name,json_path,required_quote,required_bind,section,description
+"Named Insureds - Locations - Address - Zip Code","namedInsureds[*].locations[*].address.zipCode",true,true,"Initial","The postal code for the insured location"
+"Policy - Effective Date","policy.effectiveDate",true,true,"Finalize","The date when the policy becomes effective"
 ```
 
-### Code quality and formatting
-```bash
-make install-tools  # Install development tools (clang-format, clang-tidy, cppcheck)
-make format         # Format all source code
-make check-format   # Check if code is properly formatted
-make lint           # Run all linters (cppcheck, clang-tidy)
-```
+## Next Steps
+Since the automated scraping requires authentication, you can:
 
-### OpenWrt Builds
-The project includes automated OpenWrt builds via GitHub Actions for multiple architectures.
+1. **Provide the PDF**: If you can share the PDF content, I can help extract the data
+2. **Copy the HTML**: Copy the page source from your browser and save it as an HTML file
+3. **Manual entry**: Use the field processor to manually enter the field data
+4. **Provide credentials**: If you have Atlassian access, provide credentials for automated scraping
 
-#### Manual OpenWrt Compilation
-To compile for a specific OpenWrt flavor locally:
-
-1. **Download the Dockerfile**:
-   ```bash
-   wget https://raw.githubusercontent.com/jmsmuy/cloudflare-renew/main/Dockerfile.openwrt.local
-   ```
-
-2. **Setup Docker** (if not already installed):
-
-3. **Build the Docker image** with your desired SDK:
-   ```bash
-   sudo docker build . --build-arg SDK_URL="https://downloads.openwrt.org/releases/24.10.2/targets/ramips/mt7621/openwrt-sdk-24.10.2-ramips-mt7621_gcc-13.3.0_musl.Linux-x86_64.tar.zst" -t cloudflare-openwrt
-   ```
-   
-   Replace the `SDK_URL` with the URL for your desired OpenWrt SDK version and target architecture.
-
-4. **Run the build**:
-   ```bash
-   sudo docker run --name local_cloudflare-openwrt cloudflare-openwrt
-   ```
-
-5. **Extract the compiled package**:
-   ```bash
-   sudo docker cp local_cloudflare-openwrt:/build/* .
-   ```
-
-#### Available SDK URLs
-Common OpenWrt SDK URLs for different architectures:
-- **x86_64**: `https://downloads.openwrt.org/releases/24.10.2/targets/x86/64/openwrt-sdk-24.10.2-x86-64_gcc-13.3.0_musl.Linux-x86_64.tar.zst`
-- **ramips/mt7621**: `https://downloads.openwrt.org/releases/24.10.2/targets/ramips/mt7621/openwrt-sdk-24.10.2-ramips-mt7621_gcc-13.3.0_musl.Linux-x86_64.tar.zst`
-- **ath79/generic**: `https://downloads.openwrt.org/releases/24.10.2/targets/ath79/generic/openwrt-sdk-24.10.2-ath79-generic_gcc-13.3.0_musl.Linux-x86_64.tar.zst`
-
-#### Build Artifacts
-Each build produces:
-- Cross-compiled binaries for the target architecture
-- Configuration templates and documentation
-- Installation script for OpenWrt devices
-- Compressed package ready for deployment
-
-## Usage
-
-### Automatic Renewal (Recommended)
-```bash
-./cloudflare_renew
-```
-This is the main program that:
-1. Gets your current public IP
-2. Compares with stored IP in `last.ip`
-3. For each domain, checks current Cloudflare DNS IP
-4. Updates DNS if different from public IP
-5. Logs all operations
-
-### Manual Tools
-
-#### Get current public IP
-```bash
-./tools/publicip
-```
-
-#### Get DNS record IP for a domain
-```bash
-./tools/getip cloudflare.conf cloudflare.token [domain_name]
-```
-
-#### Set DNS record IP for a domain
-```bash
-./tools/setip cloudflare.conf cloudflare.token <ip_address> [domain_name]
-```
-
-#### Bulk operations
-```bash
-./scripts/getip-all.sh    # Check all domains
-./scripts/setip-all.sh <ip>  # Update all domains
-```
-
-## API Integration
-
-This tool uses the Cloudflare v4 API:
-- **GET** `/zones/{zone_id}/dns_records/{record_id}` - Get DNS record
-- **PUT** `/zones/{zone_id}/dns_records/{record_id}` - Update DNS record
-
-## Logging
-
-All operations are logged to `cloudflare.log` with timestamps:
-```
-[2024-01-01 12:00:00] Starting cloudflare_renew...
-[2024-01-01 12:00:01] Public IP: 203.0.113.1
-[2024-01-01 12:00:02] example.com: Current IP 203.0.113.2 != Public IP 203.0.113.1
-[2024-01-01 12:00:03] example.com: Successfully updated to 203.0.113.1
-```
-
-## Error Handling
-
-- Returns exit code 0 on success, 1 on failure
-- Detailed error messages in logs
-- Graceful handling of API errors and network issues
-
-## Code Quality
-
-This project includes comprehensive code quality tools:
-
-- **Automatic Formatting**: Uses `clang-format` with consistent C99 style
-- **Static Analysis**: `cppcheck` for bug detection and code quality
-- **Linting**: `clang-tidy` for additional code analysis and best practices
-- **Pre-configured**: All tools come with project-specific configurations
-
-### Running Quality Checks
-```bash
-make format         # Format all code automatically
-make check-format   # Verify code formatting
-make lint           # Run all static analysis tools
-```
-
-## Continuous Integration
-
-The project uses GitHub Actions for automated quality assurance and releases:
-
-### 🔍 **CI Pipeline** (Pull Requests)
-- **Triggers**: On pull requests to `main` branch
-- **Checks**: 
-  - Code formatting verification
-  - Static analysis (cppcheck, clang-tidy)
-  - Build verification for all programs
-  - Test suite execution
-  - Binary functionality testing
-
-### 🚀 **Release Pipeline** (Main Branch)
-- **Triggers**: On pushes to `main` branch or manual dispatch
-- **Actions**:
-  - Automatic version detection (from `VERSION` file or date-based)
-  - Release creation with detailed changelog
-  - Linux x86_64 binary compilation with static linking
-  - Packaged distribution with setup scripts and documentation
-  - Automatic documentation updates
-
-### 📦 **Binary Releases**
-Each release includes:
-- Pre-compiled static binaries for Linux x86_64
-- Configuration templates (`cloudflare.conf.sample`)
-- Setup script (`install.sh`) for quick deployment
-- Complete documentation and license files
-
-### 🏗️ **OpenWrt Build Pipeline** (Main Branch)
-- **Triggers**: On pushes to `main` branch or manual dispatch
-- **Actions**:
-  - Cross-compilation for multiple OpenWrt targets
-  - Support for OpenWrt 22.03.5 and 23.05.0
-  - Architecture targets: x86_64, MIPS and ATH79
-  - Automated binary packaging and artifact uploads
-  - Integration with release workflow for distribution
-
-## Security
-
-- API token stored separately from configuration
-- No hardcoded credentials
-- Secure HTTPS communication with Cloudflare
-
-## License
-
-GNU Affero General Public License v3.0 - see LICENSE file for details.
-
-**Important Note**: This project uses AGPL v3, which requires that if you modify this software and make it available to users over a network (e.g., as a web service), you must also provide the source code of your modifications to those users.
+Let me know which approach you'd prefer!

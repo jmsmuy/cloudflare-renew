@@ -1,0 +1,4 @@
+field_name,json_path,required_quote,required_bind,section,description
+Named Insureds - Locations - Address - Zip Code,namedInsureds.locations[*].address.zipCode,True,True,Initial,The postal code for the insured location
+Policy - Effective Date,policy.effectiveDate,True,True,Finalize,The date when the policy becomes effective
+Coverage - Limits - General Liability,coverage.limits.generalLiability,False,True,Bind,The maximum amount covered for general liability

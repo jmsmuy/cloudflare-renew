@@ -1,0 +1,26 @@
+[
+  {
+    "field_name": "Named Insureds - Locations - Address - Zip Code",
+    "json_path": "namedInsureds.locations[*].address.zipCode",
+    "required_quote": true,
+    "required_bind": true,
+    "section": "Initial",
+    "description": "The postal code for the insured location"
+  },
+  {
+    "field_name": "Policy - Effective Date",
+    "json_path": "policy.effectiveDate",
+    "required_quote": true,
+    "required_bind": true,
+    "section": "Finalize",
+    "description": "The date when the policy becomes effective"
+  },
+  {
+    "field_name": "Coverage - Limits - General Liability",
+    "json_path": "coverage.limits.generalLiability",
+    "required_quote": false,
+    "required_bind": true,
+    "section": "Bind",
+    "description": "The maximum amount covered for general liability"
+  }
+]

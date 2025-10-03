@@ -1,0 +1,9 @@
+field_name,json_path,required_quote,required_bind,section,description
+"Named Insureds - Locations - Address - Zip Code","namedInsureds[*].locations[*].address.zipCode",true,true,"Initial","The postal code for the insured location"
+"Named Insureds - Locations - Address - Street Address","namedInsureds[*].locations[*].address.streetAddress",true,true,"Initial","The street address of the insured location"
+"Named Insureds - Locations - Address - City","namedInsureds[*].locations[*].address.city",true,true,"Initial","The city where the insured location is situated"
+"Named Insureds - Locations - Address - State","namedInsureds[*].locations[*].address.state",true,true,"Initial","The state or province where the insured location is situated"
+"Policy - Effective Date","policy.effectiveDate",true,true,"Finalize","The date when the policy becomes effective"
+"Policy - Expiration Date","policy.expirationDate",true,true,"Finalize","The date when the policy expires"
+"Coverage - Limits - General Liability","coverage.limits.generalLiability",false,true,"Bind","The maximum amount covered for general liability claims"
+"Coverage - Deductible - General Liability","coverage.deductible.generalLiability",false,true,"Bind","The amount the insured must pay before coverage applies"
